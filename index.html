@@ -1414,8 +1414,11 @@ function onDistrictChange() {
     const districtCode = document.getElementById('filterDistrict').value;
     const groupSelect = document.getElementById('filterGroup');
     const schoolSelect = document.getElementById('filterSchool');
-    groupSelect.innerHTML = '<option value="">-- ເລືອກກຸ່ມໂຮງຮຽນ --</option>';
+    
+    // ເພີ່ມຕົວເລືອກ ລວມທຸກກຸ່ມ
+    groupSelect.innerHTML = '<option value="">-- ເລືອກກຸ່ມໂຮງຮຽນ --</option><option value="all_groups">-- ລວມທຸກກຸ່ມ --</option>';
     schoolSelect.innerHTML = '<option value="">-- ເລືອກໂຮງຮຽນ --</option>';
+    
     if (!districtCode) return;
     const district = LOCATION_DATA.find(d => d.district_code === districtCode);
     if (district && district.groups) {
@@ -1429,14 +1432,32 @@ function onGroupChange() {
     const districtCode = document.getElementById('filterDistrict').value;
     const groupCode = document.getElementById('filterGroup').value;
     const schoolSelect = document.getElementById('filterSchool');
-    schoolSelect.innerHTML = '<option value="">-- ເລືອກໂຮງຮຽນ --</option>';
+    
+    // ເພີ່ມຕົວເລືອກ ລວມທຸກໂຮງຮຽນ
+    schoolSelect.innerHTML = '<option value="">-- ເລືອກໂຮງຮຽນ --</option><option value="all_schools">-- ລວມທຸກໂຮງຮຽນ --</option>';
+    
     if (!districtCode || !groupCode) return;
+    
     const district = LOCATION_DATA.find(d => d.district_code === districtCode);
-    const group = district.groups.find(g => g.group_code === groupCode);
-    if (group && group.schools) {
-        group.schools.forEach(s => {
-            schoolSelect.innerHTML += `<option value="${s.school_code}">${s.school_name}</option>`;
+    if (!district) return;
+
+    if (groupCode === 'all_groups') {
+        // ຖ້າເລືອກ "ລວມທຸກກຸ່ມ" ໃຫ້ດຶງເອົາໂຮງຮຽນທັງໝົດພາຍໃນເມືອງນັ້ນມາສະແດງ
+        district.groups.forEach(g => {
+            if (g.schools) {
+                g.schools.forEach(s => {
+                    schoolSelect.innerHTML += `<option value="${s.school_code}">${s.school_name} (${g.group_name})</option>`;
+                });
+            }
         });
+    } else {
+        // ຖ້າເລືອກກຸ່ມປົກກະຕິ
+        const group = district.groups.find(g => g.group_code === groupCode);
+        if (group && group.schools) {
+            group.schools.forEach(s => {
+                schoolSelect.innerHTML += `<option value="${s.school_code}">${s.school_name}</option>`;
+            });
+        }
     }
 }
 
