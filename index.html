@@ -606,9 +606,8 @@ const firebaseConfig = {
     messagingSenderId: "296813349977",
     appId: "1:296813349977:web:69d35a576d8dfaa2b17548",
     measurementId: "G-NVSEMYGV1D",
-    // ເພີ່ມ databaseURL ເຂົ້າໄປ (ຖ້າທ່ານເລືອກເຊີບເວີ Singapore ຕອນສ້າງ Database ຈະເປັນລິ້ງນີ້)
-    // ຖ້າຫາກລະບົບບໍ່ບັນທຶກ ໃຫ້ລອງປ່ຽນເປັນ: "https://mcpapp-c1c95-default-rtdb.firebaseio.com"
-    databaseURL: "https://mcpapp-c1c95-default-rtdb.asia-southeast1.firebasedatabase.app"
+    // ປ່ຽນລິ້ງ Database ເປັນອັນນີ້:
+    databaseURL: "https://mcpapp-c1c95-default-rtdb.firebaseio.com"
 };
 
 // ກວດສອບບໍ່ໃຫ້ Firebase ເຊື່ອມຕໍ່ຊ້ຳກັນ
@@ -632,10 +631,9 @@ function saveState() {
       focusAreas: state.focusAreas,
       activities: state.activities,
       planTarget: state.planTarget
-    }).then(() => {
-        console.log("ບັນທຶກຂໍ້ມູນໂຮງຮຽນສຳເລັດ");
     }).catch((error) => {
-        console.error("ເກີດຂໍ້ຜິດພາດໃນການບັນທຶກ:", error);
+        // ຖ້າບັນທຶກບໍ່ໄດ້ ຈະມີແຈ້ງເຕືອນຂຶ້ນມາບອກສາເຫດ
+        alert("ເກີດຂໍ້ຜິດພາດໃນການບັນທຶກລົງ Firebase:\n" + error.message);
     });
   }
 }
