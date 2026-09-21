@@ -205,14 +205,16 @@
 
 <!-- ===== PART 1 ===== -->
     <div id="page-part1" class="page hidden">
-      <div class="flex justify-between items-start mb-4">
-        <div>
-          <h1 class="text-2xl font-bold text-gray-800 mb-2">ປະເມີນ ມຄພ ພາກທີ I: ປັດໄຈນຳເຂົ້າ</h1>
-          <p class="text-gray-500">5 ດ້ານ, 25 ຕົວຊີ້ວັດ — ນ້ຳໜັກ 20%</p>
+      <div class="sticky -top-6 z-20 bg-[#f1f5f9] pt-6 pb-4 mb-2">
+        <div class="flex justify-between items-start">
+          <div>
+            <h1 class="text-2xl font-bold text-gray-800 mb-2">ປະເມີນ ມຄພ ພາກທີ I: ປັດໄຈນຳເຂົ້າ</h1>
+            <p class="text-gray-500">5 ດ້ານ, 25 ຕົວຊີ້ວັດ — ນ້ຳໜັກ 20%</p>
+          </div>
+          <button onclick="openPasteModal(1)" class="btn btn-success shadow-sm flex items-center gap-2">
+            <span>📋</span> ຄັດລອກຈາກ (Excel)
+          </button>
         </div>
-        <button onclick="openPasteModal(1)" class="btn btn-success shadow-sm flex items-center gap-2">
-          <span>📋</span> ຄັດລອກຈາກ (Excel)
-        </button>
       </div>
       <div id="part1Form"></div>
       <div class="card p-4 mt-4">
@@ -220,16 +222,18 @@
       </div>
     </div>
 
-    <!-- ===== PART 2 ===== -->
+<!-- ===== PART 2 ===== -->
     <div id="page-part2" class="page hidden">
-      <div class="flex justify-between items-start mb-4">
-        <div>
-          <h1 class="text-2xl font-bold text-gray-800 mb-2">ປະເມີນ ມຄພ ພາກທີ II: ຂະບວນການ ແລະ ພຶດຕິກຳ</h1>
-          <p class="text-gray-500">3 ດ້ານ, 20 ຕົວຊີ້ວັດ — ນ້ຳໜັກ 30%</p>
+      <div class="sticky -top-6 z-20 bg-[#f1f5f9] pt-6 pb-4 mb-2">
+        <div class="flex justify-between items-start">
+          <div>
+            <h1 class="text-2xl font-bold text-gray-800 mb-2">ປະເມີນ ມຄພ ພາກທີ II: ຂະບວນການ ແລະ ພຶດຕິກຳ</h1>
+            <p class="text-gray-500">3 ດ້ານ, 20 ຕົວຊີ້ວັດ — ນ້ຳໜັກ 30%</p>
+          </div>
+          <button onclick="openPasteModal(2)" class="btn btn-success shadow-sm flex items-center gap-2">
+            <span>📋</span> ຄັດລອກຈາກ (Excel)
+          </button>
         </div>
-        <button onclick="openPasteModal(2)" class="btn btn-success shadow-sm flex items-center gap-2">
-          <span>📋</span> ຄັດລອກຈາກ (Excel)
-        </button>
       </div>
       <div id="part2Form"></div>
       <div class="card p-4 mt-4">
