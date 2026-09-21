@@ -656,24 +656,12 @@ function loadState() {
 }
 
 // 4. ຟັງຊັນດຶງຂໍ້ມູນແບບ Realtime ຈາກ Firebase
-// ເພີ່ມຕົວປ່ຽນເກັບ Reference ຂອງ Firebase ເພື່ອເອົາໄວ້ປິດ Listener ເກົ່າ
-let currentSchoolRef = null;
-let currentStudentRef = null;
-
-// 4. ຟັງຊັນດຶງຂໍ້ມູນແບບ Realtime ຈາກ Firebase
 function loadSchoolData() {
   if (!state.school || !state.school.code) return;
   const schoolKey = state.school.code + '_' + state.school.year;
 
-  // 2. ປິດການດຶງຂໍ້ມູນ (Listener) ຂອງໂຮງຮຽນເກົ່າກ່ອນທີ່ຈະເປີດອັນໃໝ່ ປ້ອງກັນຂໍ້ມູນຕີກັນ
-  if (currentSchoolRef) currentSchoolRef.off('value');
-  if (currentStudentRef) currentStudentRef.off('value');
-
-  currentSchoolRef = db.ref('schools/' + schoolKey);
-  currentStudentRef = db.ref('studentScores/' + schoolKey);
-
   // ດຶງຂໍ້ມູນ ມຄພ ພາກ 1, 2 ແລະ ອື່ນໆ
-  currentSchoolRef.on('value', (snapshot) => {
+  db.ref('schools/' + schoolKey).on('value', (snapshot) => {
     const data = snapshot.val();
     if (data) {
       state.part1 = data.part1 || {};
@@ -690,7 +678,7 @@ function loadSchoolData() {
   });
 
   // ດຶງຄະແນນນັກຮຽນ (ພາກທີ III)
-  currentStudentRef.on('value', (snapshot) => {
+  db.ref('studentScores/' + schoolKey).on('value', (snapshot) => {
     const data = snapshot.val();
     studentScores = {};
     if (data) {
@@ -1241,15 +1229,6 @@ function saveSchoolInfo() {
      showToast('ກະລຸນາເລືອກໂຮງຮຽນໃນຊ່ອງຄົ້ນຫາກ່ອນ!', 'warning');
      return;
   }
-
-  // 1. ລ້າງຂໍ້ມູນຄະແນນເກົ່າອອກກ່ອນທັນທີ ເພື່ອບໍ່ໃຫ້ສະແດງຜົນຂອງໂຮງຮຽນກ່ອນໜ້າຄ້າງໄວ້
-  state.part1 = {};
-  state.part2 = {};
-  state.part3 = {};
-  studentScores = {};
-  state.focusAreas = [];
-  state.activities = [];
-  state.planTarget = 75;
   
   state.school.code = schoolSelect.value;
   state.school.name = schoolSelect.options[schoolSelect.selectedIndex].text;
@@ -1259,9 +1238,8 @@ function saveSchoolInfo() {
   loadSchoolData();
   saveState();
   
-  // ລ້າງຟອມ ແລະ ເຣັນເດີໃໝ່ (ຕອນນີ້ກຣາບ ແລະ ຕົວເລກຈະເປັນ 0% ແລ້ວລໍຖ້າ Firebase ໂຫຼດໃໝ່)
+  // ລ້າງຟອມ ແລະ ເຣັນເດີໃໝ່ເພື່ອສະແດງຂໍ້ມູນຂອງໂຮງຮຽນນີ້
   renderAll();
-  showToast('ເລືອກໂຮງຮຽນ ແລະ ໂຫຼດຂໍ້ມູນສຳເລັດ', 'success');
 }
 
 function calcAspectScores() {
