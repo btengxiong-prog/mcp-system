@@ -621,9 +621,13 @@ if (!firebase.apps.length) {
 const db = firebase.database();
 
 // 2. ຟັງຊັນບັນທຶກລົງທັງ LocalStorage (ສຳລັບ User) ແລະ Firebase (ສຳລັບຂໍ້ມູນໂຮງຮຽນ)
-function saveState() {
+function saveLocalConfig() {
   const globalState = { user: state.user, school: state.school };
   localStorage.setItem('mcp_global_state', JSON.stringify(globalState));
+}
+
+function saveState() {
+  saveLocalConfig();
 
   if (state.school && state.school.code) {
     const schoolKey = state.school.code + '_' + state.school.year;
@@ -636,7 +640,6 @@ function saveState() {
       activities: state.activities,
       planTarget: state.planTarget
     }).catch((error) => {
-        // ຖ້າບັນທຶກບໍ່ໄດ້ ຈະມີແຈ້ງເຕືອນຂຶ້ນມາບອກສາເຫດ
         alert("ເກີດຂໍ້ຜິດພາດໃນການບັນທຶກລົງ Firebase:\n" + error.message);
     });
   }
@@ -660,12 +663,34 @@ function loadState() {
 }
 
 // 4. ຟັງຊັນດຶງຂໍ້ມູນແບບ Realtime ຈາກ Firebase
+let currentSchoolRef = null;
+let currentStudentRef = null;
+
 function loadSchoolData() {
   if (!state.school || !state.school.code) return;
   const schoolKey = state.school.code + '_' + state.school.year;
 
-  // ດຶງຂໍ້ມູນ ມຄພ ພາກ 1, 2 ແລະ ອື່ນໆ
-  db.ref('schools/' + schoolKey).on('value', (snapshot) => {
+  // ປິດການຟັງຂໍ້ມູນ (Listener) ຂອງໂຮງຮຽນເກົ່າກ່ອນ ເພື່ອບໍ່ໃຫ້ຂໍ້ມູນຕີກັນ
+  if (currentSchoolRef) currentSchoolRef.off();
+  if (currentStudentRef) currentStudentRef.off();
+
+  // ລ້າງຂໍ້ມູນໃນໜ່ວຍຄວາມຈຳຊົ່ວຄາວກ່ອນ ເພື່ອບໍ່ໃຫ້ຂໍ້ມູນໂຮງຮຽນເກົ່າຕິດໄປນຳ
+  state.part1 = {};
+  state.part2 = {};
+  state.part3 = {};
+  state.focusAreas = [];
+  state.activities = [];
+  state.planTarget = 75;
+  studentScores = {};
+  
+  // ອັບເດດໜ້າຈໍໃຫ້ເປັນຄ່າວ່າງກ່ອນ ດຶງຂໍ້ມູນໃໝ່
+  renderAll();
+
+  currentSchoolRef = db.ref('schools/' + schoolKey);
+  currentStudentRef = db.ref('studentScores/' + schoolKey);
+
+  // ດຶງຂໍ້ມູນ ມຄພ ພາກ 1, 2 ແລະ ອື່ນໆ ສຳລັບໂຮງຮຽນໃໝ່
+  currentSchoolRef.on('value', (snapshot) => {
     const data = snapshot.val();
     if (data) {
       state.part1 = data.part1 || {};
@@ -682,13 +707,12 @@ function loadSchoolData() {
   });
 
   // ດຶງຄະແນນນັກຮຽນ (ພາກທີ III)
-  db.ref('studentScores/' + schoolKey).on('value', (snapshot) => {
+  currentStudentRef.on('value', (snapshot) => {
     const data = snapshot.val();
     studentScores = {};
     if (data) {
-        // ແປງຄີ (Key) ຈາກຂີດລຸ່ມ (_) ກັບຄືນມາເປັນຈ້ຳ (.) ຄືເກົ່າ ເພື່ອໃຫ້ລະບົບສະແດງຜົນຖືກຕ້ອງ
         for (let safeKey in data) {
-            const originalKey = safeKey.replace('_', '.'); // ປ່ຽນ ປ_1 ເປັນ ປ.1
+            const originalKey = safeKey.replace('_', '.');
             studentScores[originalKey] = data[safeKey];
         }
     }
@@ -1238,12 +1262,11 @@ function saveSchoolInfo() {
   state.school.name = schoolSelect.options[schoolSelect.selectedIndex].text;
   state.school.year = document.getElementById('academicYear').value;
   
-  // ໂຫຼດຂໍ້ມູນການປະເມີນໃໝ່ ໃຫ້ກົງກັບໂຮງຮຽນທີ່ເລືອກ
-  loadSchoolData();
-  saveState();
+  // ບັນທຶກສະເພາະການເລືອກໂຮງຮຽນລົງໃນເຄື່ອງ (Local) ບໍ່ໃຫ້ໄປທັບຂໍ້ມູນໃນ Firebase
+  saveLocalConfig(); 
   
-  // ລ້າງຟອມ ແລະ ເຣັນເດີໃໝ່ເພື່ອສະແດງຂໍ້ມູນຂອງໂຮງຮຽນນີ້
-  renderAll();
+  // ໂຫຼດຂໍ້ມູນການປະເມີນໃໝ່ ໃຫ້ກົງກັບໂຮງຮຽນທີ່ເລືອກ (ຟັງຊັນນີ້ຈະລ້າງຟອມອັດຕະໂນມັດ)
+  loadSchoolData();
 }
 
 function calcAspectScores() {
