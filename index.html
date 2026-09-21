@@ -626,19 +626,25 @@ function saveLocalConfig() {
   localStorage.setItem('mcp_global_state', JSON.stringify(globalState));
 }
 
+// 2. ຟັງຊັນບັນທຶກລົງທັງ LocalStorage (ສຳລັບ User) ແລະ Firebase (ສຳລັບຂໍ້ມູນໂຮງຮຽນ)
+function saveLocalConfig() {
+  const globalState = { user: state.user, school: state.school };
+  localStorage.setItem('mcp_global_state', JSON.stringify(globalState));
+}
+
 function saveState() {
-  saveLocalConfig();
+  saveLocalConfig(); // ບັນທຶກສະຖານະການເລືອກໂຮງຮຽນ
 
   if (state.school && state.school.code) {
     const schoolKey = state.school.code + '_' + state.school.year;
-    // ສົ່ງຂໍ້ມູນຂຶ້ນ Firebase Realtime
+    // ສົ່ງຂໍ້ມູນສະເພາະຂອງໂຮງຮຽນນັ້ນ ຂຶ້ນ Firebase Realtime
     db.ref('schools/' + schoolKey).set({
-      part1: state.part1,
-      part2: state.part2,
-      part3: state.part3,
-      focusAreas: state.focusAreas,
-      activities: state.activities,
-      planTarget: state.planTarget
+      part1: state.part1 || {},
+      part2: state.part2 || {},
+      part3: state.part3 || {},
+      focusAreas: state.focusAreas || [],
+      activities: state.activities || [],
+      planTarget: state.planTarget || 75
     }).catch((error) => {
         alert("ເກີດຂໍ້ຜິດພາດໃນການບັນທຶກລົງ Firebase:\n" + error.message);
     });
@@ -670,11 +676,11 @@ function loadSchoolData() {
   if (!state.school || !state.school.code) return;
   const schoolKey = state.school.code + '_' + state.school.year;
 
-  // ປິດການຟັງຂໍ້ມູນ (Listener) ຂອງໂຮງຮຽນເກົ່າກ່ອນ ເພື່ອບໍ່ໃຫ້ຂໍ້ມູນຕີກັນ
+  // 1. ປິດການຟັງຂໍ້ມູນ (Listener) ຂອງໂຮງຮຽນເກົ່າກ່ອນ ເພື່ອບໍ່ໃຫ້ຂໍ້ມູນຕີກັນ
   if (currentSchoolRef) currentSchoolRef.off();
   if (currentStudentRef) currentStudentRef.off();
 
-  // ລ້າງຂໍ້ມູນໃນໜ່ວຍຄວາມຈຳຊົ່ວຄາວກ່ອນ ເພື່ອບໍ່ໃຫ້ຂໍ້ມູນໂຮງຮຽນເກົ່າຕິດໄປນຳ
+  // 2. ລ້າງຂໍ້ມູນໃນໜ່ວຍຄວາມຈຳຊົ່ວຄາວກ່ອນ ເພື່ອບໍ່ໃຫ້ຂໍ້ມູນໂຮງຮຽນເກົ່າຕິດໄປນຳ
   state.part1 = {};
   state.part2 = {};
   state.part3 = {};
@@ -683,13 +689,13 @@ function loadSchoolData() {
   state.planTarget = 75;
   studentScores = {};
   
-  // ອັບເດດໜ້າຈໍໃຫ້ເປັນຄ່າວ່າງກ່ອນ ດຶງຂໍ້ມູນໃໝ່
+  // 3. ອັບເດດໜ້າຈໍໃຫ້ເປັນຄ່າວ່າງ (0%) ທັນທີທີ່ປ່ຽນໂຮງຮຽນ
   renderAll();
 
+  // 4. ເລີ່ມດຶງຂໍ້ມູນຂອງໂຮງຮຽນໃໝ່ຈາກ Firebase
   currentSchoolRef = db.ref('schools/' + schoolKey);
   currentStudentRef = db.ref('studentScores/' + schoolKey);
 
-  // ດຶງຂໍ້ມູນ ມຄພ ພາກ 1, 2 ແລະ ອື່ນໆ ສຳລັບໂຮງຮຽນໃໝ່
   currentSchoolRef.on('value', (snapshot) => {
     const data = snapshot.val();
     if (data) {
@@ -1262,10 +1268,10 @@ function saveSchoolInfo() {
   state.school.name = schoolSelect.options[schoolSelect.selectedIndex].text;
   state.school.year = document.getElementById('academicYear').value;
   
-  // ບັນທຶກສະເພາະການເລືອກໂຮງຮຽນລົງໃນເຄື່ອງ (Local) ບໍ່ໃຫ້ໄປທັບຂໍ້ມູນໃນ Firebase
+  // ບັນທຶກສະເພາະການຕັ້ງຄ່າໂຮງຮຽນລົງໃນເຄື່ອງ (Local) ເພື່ອຈື່ວ່າເລືອກໂຮງຮຽນໃດໄວ້
   saveLocalConfig(); 
   
-  // ໂຫຼດຂໍ້ມູນການປະເມີນໃໝ່ ໃຫ້ກົງກັບໂຮງຮຽນທີ່ເລືອກ (ຟັງຊັນນີ້ຈະລ້າງຟອມອັດຕະໂນມັດ)
+  // ໂຫຼດຂໍ້ມູນໂຮງຮຽນໃໝ່ (ຫ້າມມີຄຳສັ່ງ saveState() ຢູ່ບ່ອນນີ້ເດັດຂາດ)
   loadSchoolData();
 }
 
