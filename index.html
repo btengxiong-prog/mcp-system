@@ -660,7 +660,7 @@ function loadSchoolData() {
   if (!state.school || !state.school.code) return;
   const schoolKey = state.school.code + '_' + state.school.year;
 
-  // on() ຄືການດັກຟັງຂໍ້ມູນແບບ Realtime ຈາກ Firebase ໃຜປ່ຽນແປງ ກໍຈະອັບເດດໜ້າຈໍທັນທີ!
+  // ດຶງຂໍ້ມູນ ມຄພ ພາກ 1, 2 ແລະ ອື່ນໆ
   db.ref('schools/' + schoolKey).on('value', (snapshot) => {
     const data = snapshot.val();
     if (data) {
@@ -674,13 +674,20 @@ function loadSchoolData() {
       state.part1 = {}; state.part2 = {}; state.part3 = {};
       state.focusAreas = []; state.activities = []; state.planTarget = 75;
     }
-    renderAll(); // ສັ່ງໃຫ້ໜ້າຈໍອັບເດດສະແດງຜົນໃໝ່
+    renderAll();
   });
 
-  // ດຶງຄະແນນນັກຮຽນ (ພາກທີ III) ແບບ Realtime
+  // ດຶງຄະແນນນັກຮຽນ (ພາກທີ III)
   db.ref('studentScores/' + schoolKey).on('value', (snapshot) => {
     const data = snapshot.val();
-    studentScores = data || {};
+    studentScores = {};
+    if (data) {
+        // ແປງຄີ (Key) ຈາກຂີດລຸ່ມ (_) ກັບຄືນມາເປັນຈ້ຳ (.) ຄືເກົ່າ ເພື່ອໃຫ້ລະບົບສະແດງຜົນຖືກຕ້ອງ
+        for (let safeKey in data) {
+            const originalKey = safeKey.replace('_', '.'); // ປ່ຽນ ປ_1 ເປັນ ປ.1
+            studentScores[originalKey] = data[safeKey];
+        }
+    }
     if (typeof renderPart3Table === 'function') renderPart3Table();
     if (typeof renderSummaryPart3 === 'function') renderSummaryPart3();
     calculateAll();
@@ -696,8 +703,14 @@ function saveStudentScores() {
         }
         const schoolKey = state.school.code + '_' + state.school.year;
         
-        // ຮັບປະກັນວ່າຂໍ້ມູນບໍ່ແມ່ນ undefined ກ່ອນສົ່ງຂຶ້ນ Firebase
-        const dataToSave = studentScores || {};
+        // ປ່ຽນຄີ (Key) ທີ່ມີຈ້ຳ (.) ເປັນຂີດລຸ່ມ (_) ເພື່ອໃຫ້ Firebase ຍອມຮັບ
+        const dataToSave = {};
+        if (studentScores) {
+            for (let key in studentScores) {
+                const safeKey = key.replace('.', '_'); // ປ່ຽນ ປ.1 ເປັນ ປ_1
+                dataToSave[safeKey] = studentScores[key];
+            }
+        }
         
         db.ref('studentScores/' + schoolKey).set(dataToSave)
         .then(() => {
@@ -710,6 +723,7 @@ function saveStudentScores() {
         alert("Error ໃນ saveStudentScores: " + err.message);
     }
 }
+
 function login() {
   const user = document.getElementById('loginUser').value;
   const role = document.getElementById('loginRole').value;
