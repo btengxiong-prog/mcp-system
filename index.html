@@ -688,17 +688,27 @@ function loadSchoolData() {
 }
 
 // 5. ບັນທຶກຄະແນນນັກຮຽນ (ພາກທີ III) ຂຶ້ນ Firebase
-function saveStudentScores() { 
-  if (!state.school || !state.school.code) {
-     showToast('ກະລຸນາເລືອກໂຮງຮຽນຢູ່ໜ້າແດຊບອດກ່ອນ!', 'warning');
-     return;
-  }
-  const schoolKey = state.school.code + '_' + state.school.year;
-  db.ref('studentScores/' + schoolKey).set(studentScores).then(() => {
-      calculateAll();
-  }).catch((error) => {
-      alert("ເກີດຂໍ້ຜິດພາດໃນການບັນທຶກຄະແນນພາກ 3:\n" + error.message);
-  });
+function saveStudentScores() {
+    try {
+        if (!state.school || !state.school.code) {
+           showToast('ກະລຸນາເລືອກໂຮງຮຽນຢູ່ໜ້າແດຊບອດກ່ອນ!', 'warning');
+           return;
+        }
+        const schoolKey = state.school.code + '_' + state.school.year;
+        
+        // ຮັບປະກັນວ່າຂໍ້ມູນບໍ່ແມ່ນ undefined ກ່ອນສົ່ງຂຶ້ນ Firebase
+        const dataToSave = studentScores || {};
+        
+        db.ref('studentScores/' + schoolKey).set(dataToSave)
+        .then(() => {
+            if (typeof calculateAll === 'function') calculateAll();
+        })
+        .catch((error) => {
+            alert("ເກີດຂໍ້ຜິດພາດໃນການບັນທຶກຄະແນນພາກ 3: " + error.message);
+        });
+    } catch(err) {
+        alert("Error ໃນ saveStudentScores: " + err.message);
+    }
 }
 function login() {
   const user = document.getElementById('loginUser').value;
@@ -891,37 +901,61 @@ function closeAddStudentModal() {
 }
 
 function confirmAddStudent() {
-    const inputText = document.getElementById('newStudentName').value;
-    const lines = inputText.split(/\r?\n/).map(line => line.trim()).filter(line => line !== '');
-    if (lines.length === 0) { showToast('ກະລຸນາປ້ອນ ຫຼື ວາງລາຍຊື່ນັກຮຽນກ່ອນ', 'warning'); document.getElementById('newStudentName').focus(); return; }
-    const grade = document.getElementById('part3GradeSelect').value;
-
-    // ປ້ອງກັນບັນຫາ Firebase ແປງ Array ເປັນ Object
-    if (!studentScores[grade]) {
-        studentScores[grade] = [];
-    } else if (!Array.isArray(studentScores[grade])) {
-        studentScores[grade] = Object.values(studentScores[grade]);
-    }
-
-    lines.forEach((line, index) => {
-        let stuName = line, laoScore = 1, mathScore = 1;
-        if (line.includes('\t')) {
-            const parts = line.split('\t'); stuName = parts[0].trim();
-            if (parts.length > 1) laoScore = parseInt(parts[1]);
-            if (parts.length > 2) mathScore = parseInt(parts[2]);
-        } else {
-            const match = line.match(/(.+?)\s+([0-9])\s+([0-9])\s*$/);
-            if (match) { stuName = match[1].trim(); laoScore = parseInt(match[2]); mathScore = parseInt(match[3]); }
+    try {
+        const inputText = document.getElementById('newStudentName').value;
+        const lines = inputText.split(/\r?\n/).map(line => line.trim()).filter(line => line !== '');
+        if (lines.length === 0) { 
+            showToast('ກະລຸນາປ້ອນ ຫຼື ວາງລາຍຊື່ນັກຮຽນກ່ອນ', 'warning'); 
+            document.getElementById('newStudentName').focus(); 
+            return; 
         }
-        laoScore = (isNaN(laoScore) || laoScore > 1) ? 1 : (laoScore < 0 ? 0 : laoScore);
-        mathScore = (isNaN(mathScore) || mathScore > 1) ? 1 : (mathScore < 0 ? 0 : mathScore);
-        studentScores[grade].push({ id: Date.now().toString() + '_' + index, name: stuName, lao: laoScore, math: mathScore });
-    });
+        
+        const gradeSelect = document.getElementById('part3GradeSelect');
+        const grade = gradeSelect ? gradeSelect.value : 'ປ.1';
 
-    saveStudentScores(); 
-    renderPart3Table(); 
-    closeAddStudentModal();
-    showToast(lines.length === 1 ? `ເພີ່ມນັກຮຽນສຳເລັດ` : `ດຶງລາຍຊື່ນັກຮຽນ ແລະ ຄະແນນທັງໝົດ ${lines.length} ຄົນ ສຳເລັດແລ້ວ!`, 'success');
+        // ຮັບປະກັນວ່າ studentScores ເປັນ Object ກ່ອນສະເໝີ
+        if (typeof studentScores !== 'object' || studentScores === null) {
+            studentScores = {};
+        }
+
+        // ຮັບປະກັນວ່າຊັ້ນຮຽນນີ້ມີ Array ກຽມໄວ້
+        if (!studentScores[grade]) {
+            studentScores[grade] = [];
+        } else if (!Array.isArray(studentScores[grade])) {
+            studentScores[grade] = Object.values(studentScores[grade]);
+        }
+
+        lines.forEach((line, index) => {
+            let stuName = line, laoScore = 1, mathScore = 1;
+            if (line.includes('\t')) {
+                const parts = line.split('\t'); stuName = parts[0].trim();
+                if (parts.length > 1) laoScore = parseInt(parts[1]);
+                if (parts.length > 2) mathScore = parseInt(parts[2]);
+            } else {
+                const match = line.match(/(.+?)\s+([0-9])\s+([0-9])\s*$/);
+                if (match) { stuName = match[1].trim(); laoScore = parseInt(match[2]); mathScore = parseInt(match[3]); }
+            }
+            laoScore = (isNaN(laoScore) || laoScore > 1) ? 1 : (laoScore < 0 ? 0 : laoScore);
+            mathScore = (isNaN(mathScore) || mathScore > 1) ? 1 : (mathScore < 0 ? 0 : mathScore);
+            
+            studentScores[grade].push({ 
+                id: Date.now().toString() + '_' + index, 
+                name: stuName, 
+                lao: laoScore, 
+                math: mathScore 
+            });
+        });
+
+        saveStudentScores(); 
+        renderPart3Table(); 
+        closeAddStudentModal();
+        showToast(lines.length === 1 ? `ເພີ່ມນັກຮຽນສຳເລັດ` : `ເພີ່ມລາຍຊື່ນັກຮຽນ ${lines.length} ຄົນ ສຳເລັດແລ້ວ!`, 'success');
+
+    } catch (error) {
+        // ຖ້າມີ Error ຈະແຈ້ງເຕືອນບອກທັນທີ ຈະບໍ່ມິດງຽບອີກ
+        alert("ເກີດຂໍ້ຜິດພາດໃນໂຄດເພີ່ມນັກຮຽນ: " + error.message);
+        console.error(error);
+    }
 }
 
 function updateStudentScore(grade, id, field, elementOrValue) {
