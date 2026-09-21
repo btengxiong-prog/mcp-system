@@ -689,10 +689,15 @@ function loadSchoolData() {
 
 // 5. ບັນທຶກຄະແນນນັກຮຽນ (ພາກທີ III) ຂຶ້ນ Firebase
 function saveStudentScores() { 
-  if (!state.school || !state.school.code) return;
+  if (!state.school || !state.school.code) {
+     showToast('ກະລຸນາເລືອກໂຮງຮຽນຢູ່ໜ້າແດຊບອດກ່ອນ!', 'warning');
+     return;
+  }
   const schoolKey = state.school.code + '_' + state.school.year;
   db.ref('studentScores/' + schoolKey).set(studentScores).then(() => {
       calculateAll();
+  }).catch((error) => {
+      alert("ເກີດຂໍ້ຜິດພາດໃນການບັນທຶກຄະແນນພາກ 3:\n" + error.message);
   });
 }
 function login() {
@@ -824,11 +829,15 @@ function renderPart3Table() {
     const grade = document.getElementById('part3GradeSelect')?.value || 'ປ.1';
     const tbody = document.getElementById('part3TableBody');
     if (!tbody) return;
+
+    // ປ້ອງກັນບັນຫາ Firebase ແປງ Array ເປັນ Object ຕອນສະແດງຜົນ
     if (!studentScores[grade]) {
         studentScores[grade] = [];
-        saveStudentScores();
+    } else if (!Array.isArray(studentScores[grade])) {
+        studentScores[grade] = Object.values(studentScores[grade]);
     }
-    const list = studentScores[grade] || [];
+
+    const list = studentScores[grade];
     if (list.length === 0) {
         tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-gray-500 font-semibold">ຍັງບໍ່ມີລາຍຊື່ນັກຮຽນໃນຊັ້ນນີ້ ກະລຸນາກົດ "+ ເພີ່ມຊື່ນັກຮຽນ"</td></tr>`;
         calculatePart3Summary(grade);
@@ -886,7 +895,14 @@ function confirmAddStudent() {
     const lines = inputText.split(/\r?\n/).map(line => line.trim()).filter(line => line !== '');
     if (lines.length === 0) { showToast('ກະລຸນາປ້ອນ ຫຼື ວາງລາຍຊື່ນັກຮຽນກ່ອນ', 'warning'); document.getElementById('newStudentName').focus(); return; }
     const grade = document.getElementById('part3GradeSelect').value;
-    if (!studentScores[grade]) studentScores[grade] = [];
+
+    // ປ້ອງກັນບັນຫາ Firebase ແປງ Array ເປັນ Object
+    if (!studentScores[grade]) {
+        studentScores[grade] = [];
+    } else if (!Array.isArray(studentScores[grade])) {
+        studentScores[grade] = Object.values(studentScores[grade]);
+    }
+
     lines.forEach((line, index) => {
         let stuName = line, laoScore = 1, mathScore = 1;
         if (line.includes('\t')) {
@@ -901,7 +917,10 @@ function confirmAddStudent() {
         mathScore = (isNaN(mathScore) || mathScore > 1) ? 1 : (mathScore < 0 ? 0 : mathScore);
         studentScores[grade].push({ id: Date.now().toString() + '_' + index, name: stuName, lao: laoScore, math: mathScore });
     });
-    saveStudentScores(); renderPart3Table(); closeAddStudentModal();
+
+    saveStudentScores(); 
+    renderPart3Table(); 
+    closeAddStudentModal();
     showToast(lines.length === 1 ? `ເພີ່ມນັກຮຽນສຳເລັດ` : `ດຶງລາຍຊື່ນັກຮຽນ ແລະ ຄະແນນທັງໝົດ ${lines.length} ຄົນ ສຳເລັດແລ້ວ!`, 'success');
 }
 
