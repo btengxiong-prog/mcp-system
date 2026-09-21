@@ -1404,7 +1404,10 @@ function renderReport() {
 function initLocationSelectors() {
     const districtSelect = document.getElementById('filterDistrict');
     if (!districtSelect) return;
-    districtSelect.innerHTML = '<option value="">-- ເລືອກເມືອງ --</option>';
+    
+    // ເພີ່ມຕົວເລືອກ ລວມທຸກເມືອງ
+    districtSelect.innerHTML = '<option value="">-- ເລືອກເມືອງ --</option><option value="all_districts">-- ລວມທຸກເມືອງ --</option>';
+    
     LOCATION_DATA.forEach(d => {
         districtSelect.innerHTML += `<option value="${d.district_code}">${d.district_name}</option>`;
     });
@@ -1420,11 +1423,24 @@ function onDistrictChange() {
     schoolSelect.innerHTML = '<option value="">-- ເລືອກໂຮງຮຽນ --</option>';
     
     if (!districtCode) return;
-    const district = LOCATION_DATA.find(d => d.district_code === districtCode);
-    if (district && district.groups) {
-        district.groups.forEach(g => {
-            groupSelect.innerHTML += `<option value="${g.group_code}">${g.group_name}</option>`;
+
+    if (districtCode === 'all_districts') {
+        // ຖ້າເລືອກ "ລວມທຸກເມືອງ" ໃຫ້ດຶງເອົາກຸ່ມທັງໝົດຂອງທຸກເມືອງມາສະແດງ
+        LOCATION_DATA.forEach(d => {
+            if (d.groups) {
+                d.groups.forEach(g => {
+                    groupSelect.innerHTML += `<option value="${g.group_code}">${g.group_name} (${d.district_name})</option>`;
+                });
+            }
         });
+    } else {
+        // ຖ້າເລືອກເມືອງປົກກະຕິ
+        const district = LOCATION_DATA.find(d => d.district_code === districtCode);
+        if (district && district.groups) {
+            district.groups.forEach(g => {
+                groupSelect.innerHTML += `<option value="${g.group_code}">${g.group_name}</option>`;
+            });
+        }
     }
 }
 
@@ -1438,11 +1454,41 @@ function onGroupChange() {
     
     if (!districtCode || !groupCode) return;
     
+    if (districtCode === 'all_districts') {
+        if (groupCode === 'all_groups') {
+            // ຖ້າເລືອກ "ລວມທຸກເມືອງ" ແລະ "ລວມທຸກກຸ່ມ" ໃຫ້ສະແດງໂຮງຮຽນທັງໝົດໃນລະບົບ
+            LOCATION_DATA.forEach(d => {
+                if (d.groups) {
+                    d.groups.forEach(g => {
+                        if (g.schools) {
+                            g.schools.forEach(s => {
+                                schoolSelect.innerHTML += `<option value="${s.school_code}">${s.school_name} (${d.district_name})</option>`;
+                            });
+                        }
+                    });
+                }
+            });
+        } else {
+            // ຖ້າເລືອກ "ລວມທຸກເມືອງ" ແຕ່ເລືອກ "ກຸ່ມສະເພາະ"
+            LOCATION_DATA.forEach(d => {
+                if (d.groups) {
+                    const group = d.groups.find(g => g.group_code === groupCode);
+                    if (group && group.schools) {
+                        group.schools.forEach(s => {
+                            schoolSelect.innerHTML += `<option value="${s.school_code}">${s.school_name} (${d.district_name})</option>`;
+                        });
+                    }
+                }
+            });
+        }
+        return;
+    }
+
     const district = LOCATION_DATA.find(d => d.district_code === districtCode);
     if (!district) return;
 
     if (groupCode === 'all_groups') {
-        // ຖ້າເລືອກ "ລວມທຸກກຸ່ມ" ໃຫ້ດຶງເອົາໂຮງຮຽນທັງໝົດພາຍໃນເມືອງນັ້ນມາສະແດງ
+        // ຖ້າເລືອກ "ລວມທຸກກຸ່ມ" ພາຍໃນເມືອງໃດໜຶ່ງ
         district.groups.forEach(g => {
             if (g.schools) {
                 g.schools.forEach(s => {
