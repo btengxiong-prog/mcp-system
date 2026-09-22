@@ -819,12 +819,10 @@ function login() {
 }
 
 function logout() {
-  showConfirm('ທ່ານຕ້ອງການອອກຈາກລະບົບແທ້ບໍ?', () => {
-      state.user = null;
-      saveState();
-      document.getElementById('loginScreen').classList.remove('hidden');
-      document.getElementById('appScreen').classList.add('hidden');
-  }, 'ອອກຈາກລະບົບ');
+  state.user = null;
+  saveState();
+  document.getElementById('loginScreen').classList.remove('hidden');
+  document.getElementById('appScreen').classList.add('hidden');
 }
 
 function navigate(page) {
