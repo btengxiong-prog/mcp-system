@@ -2712,7 +2712,18 @@ loadState();
 if (state.user) {
   document.getElementById('loginScreen').classList.add('hidden');
   document.getElementById('appScreen').classList.remove('hidden');
-  document.getElementById('userInfo').innerText = state.user.username;
+  
+  // 1. ສະແດງຊື່ພ້ອມບົດບາດໃຫ້ຖືກຕ້ອງ
+  const roleNames = { admin: 'ADMIN (ສິດສູງສຸດ)', district: 'ຢູເຊີຂັ້ນເມືອງ', group: 'ຢູເຊີຂັ້ນກຸ່ມ', school: 'ຢູເຊີຂັ້ນໂຮງຮຽນ' };
+  document.getElementById('userInfo').innerText = state.user.username + ' — ' + (roleNames[state.user.role] || state.user.role);
+  
+  // 2. ເປີດສະແດງເມນູ ຈັດການຜູ້ໃຊ້ ຖ້າເປັນ Admin
+  const menuUsers = document.getElementById('menu-users');
+  if (state.user.role === 'admin') {
+      menuUsers.classList.remove('hidden');
+      menuUsers.classList.add('flex');
+  }
+  
   renderAll();
   if (typeof renderLocationTable === 'function') renderLocationTable();
 }
