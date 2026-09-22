@@ -371,7 +371,7 @@
     </div>
 
     <!-- ===== SUMMARY GROUP/DISTRICT ===== -->
-    <div id="page-summary_group" class="page hidden flex-col h-[calc(100vh-3rem)]">
+    <div id="page-summary_group" class="page hidden flex flex-col h-[calc(100vh-3rem)]">
       <div class="sticky top-0 z-20 bg-[#f1f5f9] pb-4 pt-1 flex-shrink-0">
          <h1 class="text-2xl font-bold text-gray-800 mb-4">ສັງລວມຜົນການປະເມີນ ມຄພ ຂັ້ນກຸ່ມ/ເມືອງ</h1>
          <div class="card p-4 flex gap-4 items-center flex-wrap">
@@ -1986,11 +1986,12 @@ function generateSummaryReport() {
 }
 
 function renderSummaryGroupTable(schools, allData, year) {
-    let html = '<div class="overflow-x-auto"><table class="w-full border-collapse border border-gray-400 min-w-[800px] text-sm">';
+    // ເອົາ div wrapper ທີ່ຊ້ອນກັນອອກ ເພື່ອໃຫ້ Card ຫຼັກຈັດການ Scrollbar ອັນດຽວຈົບ
+    let html = '<table class="w-full border-collapse border-b border-gray-400 min-w-[800px] text-sm bg-white">';
     
-    // ຫົວຕາຕະລາງ (ຕີແຜ່ຈຳນວນໂຮງຮຽນຕາມແນວນອນ)
-    html += '<thead class="bg-gray-100 sticky top-0 z-10 shadow-sm"><tr>';
-    html += '<th class="border border-gray-400 p-2 min-w-[300px] text-left">ເນື້ອໃນ / ຕົວຊີ້ວັດ</th>';
+    // ຫົວຕາຕະລາງ (ເພີ່ມ z-20 ເພື່ອຢຶດສ່ວນຫົວໃຫ້ແໜ້ນຂຶ້ນ ແລະ ຢຶດຖັນທຳອິດໄວ້ຊ້າຍມື)
+    html += '<thead class="bg-gray-100 sticky top-0 z-20 shadow-md"><tr>';
+    html += '<th class="border border-gray-400 p-2 min-w-[300px] text-left sticky left-0 z-30 bg-gray-100 shadow-[2px_0_4px_rgba(0,0,0,0.05)]">ເນື້ອໃນ / ຕົວຊີ້ວັດ</th>';
     schools.forEach((s, i) => {
         html += `<th class="border border-gray-400 p-2 text-center min-w-[100px]">ໂຮງຮຽນທີ່ ${i+1}<br><span class="font-normal text-xs text-blue-700">${s.name}</span></th>`;
     });
@@ -1998,13 +1999,13 @@ function renderSummaryGroupTable(schools, allData, year) {
     html += '</tr></thead><tbody>';
 
     const buildRowsForPart = (partNum, title, aspectsList) => {
-        let rows = `<tr><td colspan="${schools.length + 2}" class="bg-blue-600 text-white font-bold p-3 text-base text-center">${title}</td></tr>`;
-        let qIndex = 0; // ຕົວນັບ index ຂອງແຕ່ລະພາກ
+    let rows = `<tr><td colspan="${schools.length + 2}" class="bg-blue-600 text-white font-bold p-3 text-base text-center sticky left-0 z-10">${title}</td></tr>`;
+    let qIndex = 0; // ຕົວນັບ index ຂອງແຕ່ລະພາກ
 
-        aspectsList.forEach(aspect => {
-            rows += `<tr class="bg-blue-50"><td class="border border-gray-400 p-2 font-bold text-blue-800" colspan="${schools.length + 2}">${aspect.name}</td></tr>`;
-            aspect.indicators.forEach(ind => {
-                rows += `<tr><td class="border border-gray-400 p-2">${ind}</td>`;
+    aspectsList.forEach(aspect => {
+        rows += `<tr class="bg-blue-50"><td class="border border-gray-400 p-2 font-bold text-blue-800 sticky left-0 z-10 bg-blue-50 shadow-[2px_0_4px_rgba(0,0,0,0.05)]" colspan="${schools.length + 2}">${aspect.name}</td></tr>`;
+        aspect.indicators.forEach(ind => {
+            rows += `<tr><td class="border border-gray-400 p-2 sticky left-0 z-10 bg-white shadow-[2px_0_4px_rgba(0,0,0,0.05)]">${ind}</td>`;
                 
                 let totalScore = 0;
                 let evalCount = 0; // ໂຮງຮຽນທີ່ປະເມີນຂໍ້ນີ້ແລ້ວ
@@ -2045,11 +2046,11 @@ function renderSummaryGroupTable(schools, allData, year) {
 
     // ພາກທີ 1 ແລະ 2
     html += buildRowsForPart(1, 'ພາກທີ I: ປັດໄຈນຳເຂົ້າ', MCP_DATA.part1.aspects);
-    html += buildRowsForPart(2, 'ພາກທີ II: ຂະບວນການ ແລະ ພຶດຕິກຳ', MCP_DATA.part2.aspects);
+        html += buildRowsForPart(2, 'ພາກທີ II: ຂະບວນການ ແລະ ພຶດຕິກຳ', MCP_DATA.part2.aspects);
 
-    html += '</tbody></table></div>';
-    document.getElementById('summaryGroupTableContainer').innerHTML = html;
-}
+        html += '</tbody></table>';
+        document.getElementById('summaryGroupTableContainer').innerHTML = html;
+    }
 
 function printSummaryGroup() {
     const tableDiv = document.getElementById('summaryGroupTableContainer');
