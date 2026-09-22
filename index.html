@@ -2344,11 +2344,19 @@ function renderSummaryGroupTable(schools, allData, year) {
     html += '</tr></thead><tbody>';
 
     const buildRowsForPart = (partNum, title, aspectsList) => {
-    let rows = `<tr><td colspan="${schools.length + 2}" class="bg-blue-600 text-white font-bold p-3 text-base text-center sticky left-0 z-10">${title}</td></tr>`;
+    // ແກ້ໄຂແຖວຫົວຂໍ້ພາກໃຫຍ່ (ເຊັ່ນ: ພາກທີ I, ພາກທີ II) ໃຫ້ຢຶດຕິດທາງຊ້າຍ
+    let rows = `<tr>
+        <td class="bg-blue-600 text-white font-bold p-3 text-base text-left sticky left-0 z-10 shadow-[2px_0_4px_rgba(0,0,0,0.05)]">${title}</td>
+        <td class="bg-blue-600 border border-gray-400" colspan="${schools.length + 1}"></td>
+    </tr>`;
     let qIndex = 0; // ຕົວນັບ index ຂອງແຕ່ລະພາກ
 
     aspectsList.forEach(aspect => {
-        rows += `<tr class="bg-blue-50"><td class="border border-gray-400 p-2 font-bold text-blue-800 sticky left-0 z-10 bg-blue-50 shadow-[2px_0_4px_rgba(0,0,0,0.05)]" colspan="${schools.length + 2}">${aspect.name}</td></tr>`;
+        // ແກ້ໄຂແຖວຫົວຂໍ້ດ້ານ (ເຊັ່ນ: 1. ໂຄງລ່າງ..., 2. ອຸປະກອນ...) ໃຫ້ຢຶດຕິດທາງຊ້າຍ
+        rows += `<tr class="bg-blue-50">
+            <td class="border border-gray-400 p-2 font-bold text-blue-800 sticky left-0 z-10 bg-blue-50 shadow-[2px_0_4px_rgba(0,0,0,0.05)]">${aspect.name}</td>
+            <td class="border border-gray-400 bg-blue-50" colspan="${schools.length + 1}"></td>
+        </tr>`;
         aspect.indicators.forEach(ind => {
             rows += `<tr><td class="border border-gray-400 p-2 sticky left-0 z-10 bg-white shadow-[2px_0_4px_rgba(0,0,0,0.05)]">${ind}</td>`;
                 
