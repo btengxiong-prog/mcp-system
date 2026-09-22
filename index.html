@@ -1813,7 +1813,7 @@ function initLocationSelectors() {
     
     let htmlOpts = '<option value="">-- ເລືອກເມືອງ --</option>';
     if(!state.user || state.user.role === 'admin') {
-        htmlOpts += '<option value="all_districts">-- ລວມທຸກເມືອງ --</option>';
+        htmlOpts += '<option value="all_districts">ລວມທຸກເມືອງ</option>';
     }
     
     getAccessibleLocationData().forEach(d => {
@@ -1835,7 +1835,7 @@ function onDistrictChange() {
     
     let groupOpts = '<option value="">-- ເລືອກກຸ່ມໂຮງຮຽນ --</option>';
     if(!state.user || state.user.role === 'admin' || state.user.role === 'district') {
-        groupOpts += '<option value="all_groups">-- ລວມທຸກກຸ່ມ --</option>';
+        groupOpts += '<option value="all_groups">ລວມທຸກກຸ່ມ</option>';
     }
     groupSelect.innerHTML = groupOpts;
     schoolSelect.innerHTML = '<option value="">-- ເລືອກໂຮງຮຽນ --</option>';
@@ -1873,7 +1873,7 @@ function onGroupChange() {
     
     let schoolOpts = '<option value="">-- ເລືອກໂຮງຮຽນ --</option>';
     if(!state.user || state.user.role !== 'school') {
-        schoolOpts += '<option value="all_schools">-- ລວມທຸກໂຮງຮຽນ --</option>';
+        schoolOpts += '<option value="all_schools">ລວມທຸກໂຮງຮຽນ</option>';
     }
     schoolSelect.innerHTML = schoolOpts;
     
@@ -2319,7 +2319,7 @@ function initSummaryFilters() {
     if (distSelect) {
         let htmlOpts = '<option value="">-- ເລືອກເມືອງ --</option>';
         if(!state.user || state.user.role === 'admin') {
-            htmlOpts += '<option value="all">-- ລວມທຸກເມືອງ --</option>';
+            htmlOpts += '<option value="all">ລວມທຸກເມືອງ</option>';
         }
         getAccessibleLocationData().forEach(d => {
             htmlOpts += `<option value="${d.district_code}">${d.district_name}</option>`;
@@ -2339,7 +2339,7 @@ function onSumDistrictChange() {
     
     let htmlOpts = '<option value="">-- ເລືອກກຸ່ມ --</option>';
     if(!state.user || state.user.role === 'admin' || state.user.role === 'district') {
-        htmlOpts += '<option value="all">-- ລວມທຸກກຸ່ມ --</option>';
+        htmlOpts += '<option value="all">ລວມທຸກກຸ່ມ</option>';
     }
     gSelect.innerHTML = htmlOpts;
     
