@@ -214,9 +214,14 @@
             <h1 class="text-2xl font-bold text-gray-800 mb-2">ປະເມີນ ມຄພ ພາກທີ I: ປັດໄຈນຳເຂົ້າ</h1>
             <p class="text-gray-500">5 ດ້ານ, 25 ຕົວຊີ້ວັດ — ນ້ຳໜັກ 20%</p>
           </div>
-          <button onclick="openPasteModal(1)" class="btn btn-success shadow-sm flex items-center gap-2">
-            <span>📋</span> ຄັດລອກຈາກ (Excel)
-          </button>
+          <div class="flex gap-2">
+            <button onclick="clearPartData(1)" class="btn btn-danger shadow-sm flex items-center gap-2">
+              <span>🗑️</span> ລຶບຂໍ້ມູນ
+            </button>
+            <button onclick="openPasteModal(1)" class="btn btn-success shadow-sm flex items-center gap-2">
+              <span>📋</span> ຄັດລອກຈາກ (Excel)
+            </button>
+          </div>
         </div>
       </div>
       <div id="part1Form"></div>
@@ -233,9 +238,14 @@
             <h1 class="text-2xl font-bold text-gray-800 mb-2">ປະເມີນ ມຄພ ພາກທີ II: ຂະບວນການ ແລະ ພຶດຕິກຳ</h1>
             <p class="text-gray-500">3 ດ້ານ, 20 ຕົວຊີ້ວັດ — ນ້ຳໜັກ 30%</p>
           </div>
-          <button onclick="openPasteModal(2)" class="btn btn-success shadow-sm flex items-center gap-2">
-            <span>📋</span> ຄັດລອກຈາກ (Excel)
-          </button>
+          <div class="flex gap-2">
+            <button onclick="clearPartData(2)" class="btn btn-danger shadow-sm flex items-center gap-2">
+              <span>🗑️</span> ລຶບຂໍ້ມູນ
+            </button>
+            <button onclick="openPasteModal(2)" class="btn btn-success shadow-sm flex items-center gap-2">
+              <span>📋</span> ຄັດລອກຈາກ (Excel)
+            </button>
+          </div>
         </div>
       </div>
       <div id="part2Form"></div>
@@ -895,7 +905,23 @@ function savePartManual(partNum) {
   calculateAll();
   showToast(`ບັນທຶກຂໍ້ມູນພາກທີ ${partNum} ສຳເລັດແລ້ວ!`, 'success');
 }
-
+function clearPartData(partNum) {
+  if (!state.school || !state.school.code) {
+      showToast('ກະລຸນາເລືອກໂຮງຮຽນກ່ອນດຳເນີນການ!', 'warning');
+      return;
+  }
+  showConfirm(`ທ່ານຕ້ອງການລຶບຂໍ້ມູນການປະເມີນ ພາກທີ ${partNum} ທັງໝົດຂອງໂຮງຮຽນນີ້ແທ້ບໍ?`, () => {
+      // ກຳນົດຄ່າຂໍ້ມູນໃນພາກນັ້ນໃຫ້ກາຍເປັນ Object ວ່າງເປົ່າ
+      state['part' + partNum] = {}; 
+      saveState(); // ສັ່ງບັນທຶກຂຶ້ນ Firebase ເພື່ອທັບຄ່າເກົ່າ
+      
+      // ໂຫຼດຟອມຄືນໃໝ່ ເພື່ອລ້າງການຕິກ (Radio buttons) ຢູ່ໜ້າຈໍອອກ
+      renderPartForm(partNum, 'part' + partNum + 'Form'); 
+      calculateAll(); // ຄຳນວນເປີເຊັນຢູ່ໜ້າແດຊບອດຄືນໃໝ່
+      
+      showToast(`ລຶບຂໍ້ມູນພາກທີ ${partNum} ສຳເລັດແລ້ວ! ປັດຈຸບັນເປັນຄ່າວ່າງ.`, 'success');
+  }, `ຢືນຢັນການລຶບຂໍ້ມູນ ພາກທີ ${partNum}`);
+}
 function calcPart1() {
   let pass = 0, improve = 0, fail = 0;
   for (let i = 0; i < 25; i++) {
