@@ -531,16 +531,19 @@
   </div>
 </div>
 <div id="addStudentModal" class="fixed inset-0 z-[10000] hidden items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm transition-opacity">
-  <div class="bg-white rounded-xl shadow-2xl p-6 w-11/12 max-w-md transform scale-95 transition-transform duration-300" id="addStudentBox">
+  <div class="bg-white rounded-xl shadow-2xl p-6 w-11/12 max-w-2xl transform scale-95 transition-transform duration-300" id="addStudentBox">
     <div class="mb-4">
-      <h3 class="text-xl font-bold text-gray-900 mb-2">ເພີ່ມລາຍຊື່ນັກຮຽນໃໝ່</h3>
-      <p class="text-sm text-gray-600 mb-2" id="addStudentGradeLabel">ປ້ອນຊື່ ຫຼື ວາງລາຍຊື່ນັກຮຽນເພື່ອເພີ່ມເຂົ້າໃນຊັ້ນຮຽນ</p>
-      <p class="text-xs text-blue-700 mb-3 bg-blue-50 p-2 rounded-lg font-semibold border border-blue-100">💡 ທ່ານສາມາດກັອບປີ້ລາຍຊື່ຫຼາຍຄົນຈາກ Excel ມາວາງລົງໄດ້ເລີຍ (ແຖວລະ 1 ຊື່)</p>
-      <textarea id="newStudentName" rows="6" placeholder="ຕົວຢ່າງ:&#10;ທ້າວ ສົມຊາຍ ໃຈດີ&#10;ນາງ ພອນທິບ ວົງຄຳ&#10;ວາງລາຍຊື່ຈາກ Excel ຢູ່ທີ່ນີ້..." class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold resize-y"></textarea>
+      <h3 class="text-xl font-bold text-gray-900 mb-2">ເພີ່ມລາຍຊື່ນັກຮຽນ (ຮອງຮັບການວາງຈາກ Excel ຫຼາຍໂຮງຮຽນ)</h3>
+      <p class="text-sm text-gray-600 mb-2" id="addStudentGradeLabel">ທ່ານສາມາດກັອບປີ້ຂໍ້ມູນທັງໝົດຈາກ Excel ແລ້ວວາງລົງນີ້ໄດ້ເລີຍ</p>
+      <p class="text-xs text-blue-700 mb-3 bg-blue-50 p-2 rounded-lg font-semibold border border-blue-100">
+        💡 <b>ຮູບແບບທີ່ຮອງຮັບ:</b> ກັອບປີ້ 6 ຖັນ ຫຼື 5 ຖັນລວດ (ລ/ດ, ລະຫັດໂຮງຮຽນ, ຊື່ນັກຮຽນ, ພາສາລາວ, ຄະນິດສາດ, ຂັ້ນຮຽນ)<br>
+        ລະບົບຈະອ່ານລະຫັດໂຮງຮຽນ ແລະ ຊັ້ນຮຽນ ເພື່ອແຍກນັກຮຽນເຂົ້າແຕ່ລະໂຮງຮຽນໃຫ້ອັດຕະໂນມັດ!
+      </p>
+      <textarea id="newStudentName" rows="8" placeholder="ຕົວຢ່າງການວາງຈາກ Excel:&#10;1&#9;10803001&#9;ນາງ ຝົນນາລິນ ພວງສາລີພັນ&#9;1&#9;1&#9;ປ.1&#10;2&#9;10803001&#9;ນາງ ແພັດ ພວງແກ້ວ&#9;1&#9;1&#9;ປ.1&#10;ວາງຂໍ້ມູນຢູ່ທີ່ນີ້..." class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold resize-y"></textarea>
     </div>
     <div class="flex justify-end gap-3 mt-4">
       <button onclick="closeAddStudentModal()" class="btn bg-gray-200 text-gray-800 hover:bg-gray-300 font-bold">ຍົກເລີກ</button>
-      <button onclick="confirmAddStudent()" class="btn btn-primary font-bold shadow-lg">ບັນທຶກຂໍ້ມູນ</button>
+      <button id="btnConfirmAddStudent" onclick="confirmAddStudent()" class="btn btn-primary font-bold shadow-lg">ບັນທຶກຂໍ້ມູນ</button>
     </div>
   </div>
 </div>
@@ -1350,50 +1353,134 @@ function confirmAddStudent() {
             document.getElementById('newStudentName').focus(); 
             return; 
         }
-        
-        const gradeSelect = document.getElementById('part3GradeSelect');
-        const grade = gradeSelect ? gradeSelect.value : 'ປ.1';
 
-        // ຮັບປະກັນວ່າ studentScores ເປັນ Object ກ່ອນສະເໝີ
-        if (typeof studentScores !== 'object' || studentScores === null) {
-            studentScores = {};
-        }
+        // ດຶງສົກຮຽນປັດຈຸບັນ
+        const yearEl = document.getElementById('academicYear');
+        const currentYear = yearEl ? yearEl.value : (new Date().getFullYear() + '-' + (new Date().getFullYear() + 1));
 
-        // ຮັບປະກັນວ່າຊັ້ນຮຽນນີ້ມີ Array ກຽມໄວ້
-        if (!studentScores[grade]) {
-            studentScores[grade] = [];
-        } else if (!Array.isArray(studentScores[grade])) {
-            studentScores[grade] = Object.values(studentScores[grade]);
-        }
+        let parsedData = {}; // ໂຕເກັບຂໍ້ມູນແຍກຕາມໂຮງຮຽນ: { schoolCode: { 'ປ_1': [...], 'ປ_2': [...] } }
+
+        // ຄ່າເລີ່ມຕົ້ນໃນກໍລະນີທີ່ຜູ້ໃຊ້ວາງມາແບບເກົ່າ (ມີແຕ່ຊື່)
+        const currentGrade = document.getElementById('part3GradeSelect') ? document.getElementById('part3GradeSelect').value : 'ປ.1';
+        const currentSchoolCode = state.school && state.school.code ? state.school.code : null;
 
         lines.forEach((line, index) => {
-            let stuName = line, laoScore = 1, mathScore = 1;
-            if (line.includes('\t')) {
-                const parts = line.split('\t'); stuName = parts[0].trim();
+            const parts = line.split('\t').map(p => p.trim());
+
+            let schoolCode = currentSchoolCode;
+            let stuName = '';
+            let laoScore = 1;
+            let mathScore = 1;
+            let grade = currentGrade;
+
+            // ກວດສອບຮູບແບບ 6 ຖັນ (ລ/ດ, ລະຫັດ, ຊື່, ລາວ, ເລກ, ຊັ້ນ) ຕາມຮູບພາບ
+            if (parts.length >= 6) {
+                schoolCode = parts[1]; // ຖັນທີ 2 ແມ່ນລະຫັດ
+                stuName = parts[2];    // ຖັນທີ 3 ແມ່ນຊື່
+                laoScore = parseInt(parts[3]);
+                mathScore = parseInt(parts[4]);
+                grade = parts[5];      // ຖັນທີ 6 ແມ່ນຊັ້ນຮຽນ
+            } else if (parts.length === 5) {
+                // ກໍລະນີບໍ່ມີ ລ/ດ (ລະຫັດ, ຊື່, ລາວ, ເລກ, ຊັ້ນ) ລະຫັດໂຮງຮຽນມັກຈະມີ 7-9 ຕົວເລກ
+                if (/^\d{7,10}$/.test(parts[0])) { 
+                    schoolCode = parts[0];
+                    stuName = parts[1];
+                    laoScore = parseInt(parts[2]);
+                    mathScore = parseInt(parts[3]);
+                    grade = parts[4];
+                } else {
+                    // ກໍລະນີ ລ/ດ, ຊື່, ລາວ, ເລກ, ຊັ້ນ (ໃຊ້ລະຫັດໂຮງຮຽນປັດຈຸບັນ)
+                    stuName = parts[1];
+                    laoScore = parseInt(parts[2]);
+                    mathScore = parseInt(parts[3]);
+                    grade = parts[4];
+                }
+            } else {
+                // ຮູບແບບເກົ່າ (ຊື່ລ້າໆ ຫຼື ຊື່ + ຄະແນນ)
+                stuName = parts[0];
                 if (parts.length > 1) laoScore = parseInt(parts[1]);
                 if (parts.length > 2) mathScore = parseInt(parts[2]);
-            } else {
-                const match = line.match(/(.+?)\s+([0-9])\s+([0-9])\s*$/);
-                if (match) { stuName = match[1].trim(); laoScore = parseInt(match[2]); mathScore = parseInt(match[3]); }
             }
+
+            if (!schoolCode) return; // ຖ້າບໍ່ມີລະຫັດໂຮງຮຽນເລີຍ ໃຫ້ຂ້າມແຖວນີ້
+
             laoScore = (isNaN(laoScore) || laoScore > 1) ? 1 : (laoScore < 0 ? 0 : laoScore);
             mathScore = (isNaN(mathScore) || mathScore > 1) ? 1 : (mathScore < 0 ? 0 : mathScore);
-            
-            studentScores[grade].push({ 
-                id: Date.now().toString() + '_' + index, 
-                name: stuName, 
-                lao: laoScore, 
-                math: mathScore 
+
+            const safeGradeKey = grade.replace('.', '_'); // ປ່ຽນ ປ.1 ເປັນ ປ_1 ເພື່ອບັນທຶກໃນ Firebase
+
+            if (!parsedData[schoolCode]) parsedData[schoolCode] = {};
+            if (!parsedData[schoolCode][safeGradeKey]) parsedData[schoolCode][safeGradeKey] = [];
+
+            parsedData[schoolCode][safeGradeKey].push({
+                id: Date.now().toString() + '_' + index,
+                name: stuName,
+                lao: laoScore,
+                math: mathScore
             });
         });
 
-        saveStudentScores(); 
-        renderPart3Table(); 
-        closeAddStudentModal();
-        showToast(lines.length === 1 ? `ເພີ່ມນັກຮຽນສຳເລັດ` : `ເພີ່ມລາຍຊື່ນັກຮຽນ ${lines.length} ຄົນ ສຳເລັດແລ້ວ!`, 'success');
+        const schoolCodes = Object.keys(parsedData);
+        if (schoolCodes.length === 0) {
+            showToast('ຮູບແບບຂໍ້ມູນບໍ່ຖືກຕ້ອງ ຫຼື ບໍ່ໄດ້ເລືອກໂຮງຮຽນປັດຈຸບັນ', 'error');
+            return;
+        }
+
+        const btnSubmit = document.getElementById('btnConfirmAddStudent');
+        if (btnSubmit) btnSubmit.innerText = 'ກຳລັງບັນທຶກ...';
+
+        // ດຶງຂໍ້ມູນເກົ່າຂອງແຕ່ລະໂຮງຮຽນຈາກ Firebase ມາກ່ອນ ເພື່ອເອົາຂໍ້ມູນໃໝ່ໄປຕໍ່ທ້າຍ (Append)
+        let fetchPromises = schoolCodes.map(code => {
+            const schoolKey = code + '_' + currentYear;
+            return db.ref('studentScores/' + schoolKey).once('value').then(snap => {
+                return { code: code, schoolKey: schoolKey, existingData: snap.val() || {} };
+            });
+        });
+
+        Promise.all(fetchPromises).then(results => {
+            let savePromises = [];
+            let totalStudentsSaved = 0;
+
+            results.forEach(res => {
+                let dataToSave = res.existingData;
+                let newDataForSchool = parsedData[res.code];
+
+                for (let safeGradeKey in newDataForSchool) {
+                    if (!dataToSave[safeGradeKey]) {
+                        dataToSave[safeGradeKey] = [];
+                    } else if (!Array.isArray(dataToSave[safeGradeKey])) {
+                        dataToSave[safeGradeKey] = Object.values(dataToSave[safeGradeKey]);
+                    }
+
+                    // ເອົາຂໍ້ມູນໃໝ່ຕໍ່ທ້າຍລາຍຊື່ເກົ່າ
+                    dataToSave[safeGradeKey] = dataToSave[safeGradeKey].concat(newDataForSchool[safeGradeKey]);
+                    totalStudentsSaved += newDataForSchool[safeGradeKey].length;
+                }
+
+                // ບັນທຶກກັບຄືນ Firebase
+                savePromises.push(db.ref('studentScores/' + res.schoolKey).set(dataToSave));
+
+                // ຖ້າກົງກັບໂຮງຮຽນທີ່ກຳລັງເປີດຢູ່ໜ້າຈໍ ໃຫ້ອັບເດດ state (studentScores) ທັນທີ
+                if (currentSchoolCode === res.code) {
+                    for (let safeGradeKey in dataToSave) {
+                        const originalKey = safeGradeKey.replace('_', '.');
+                        studentScores[originalKey] = dataToSave[safeGradeKey];
+                    }
+                }
+            });
+
+            return Promise.all(savePromises).then(() => { return totalStudentsSaved; });
+        }).then((totalStudentsSaved) => {
+            renderPart3Table();
+            closeAddStudentModal();
+            if (btnSubmit) btnSubmit.innerText = 'ບັນທຶກຂໍ້ມູນ';
+            showToast(`ເພີ່ມລາຍຊື່ນັກຮຽນ ${totalStudentsSaved} ຄົນ ເຂົ້າ ${schoolCodes.length} ໂຮງຮຽນ ສຳເລັດແລ້ວ!`, 'success');
+        }).catch(err => {
+            alert("ເກີດຂໍ້ຜິດພາດໃນການບັນທຶກລົງ Firebase: " + err.message);
+            if (btnSubmit) btnSubmit.innerText = 'ບັນທຶກຂໍ້ມູນ';
+        });
 
     } catch (error) {
-        // ຖ້າມີ Error ຈະແຈ້ງເຕືອນບອກທັນທີ ຈະບໍ່ມິດງຽບອີກ
         alert("ເກີດຂໍ້ຜິດພາດໃນໂຄດເພີ່ມນັກຮຽນ: " + error.message);
         console.error(error);
     }
