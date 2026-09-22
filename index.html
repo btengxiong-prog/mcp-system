@@ -72,16 +72,31 @@
         <input id="loginPass" type="password" value="MCP@29962200" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
       </div>
       <div>
-        <label class="block text-sm font-semibold mb-1">ບົດບາດ</label>
-        <select id="loginRole" class="w-full px-4 py-2 border rounded-lg">
-          <option value="school_admin">ຜູ້ອຳນວຍການໂຮງຮຽນ</option>
-          <option value="teacher">ຄູສອນ</option>
-          <option value="cpsb">ຄພສບ / ຊຸມຊົນ</option>
-          <option value="district">ຫ້ອງການສຶກສາ ເມືອງ</option>
-          <option value="province">ພະແນກສຶກສາ ແຂວງ</option>
-          <option value="super">ກົມປະກັນຄຸນນະພາບ</option>
+        <label class="block text-sm font-semibold mb-1">ບົດບາດ (ສິດນຳໃຊ້)</label>
+        <select id="loginRole" class="w-full px-4 py-2 border rounded-lg" onchange="onLoginRoleChange()">
+          <option value="admin">ADMIN (ສິດສູງສຸດ)</option>
+          <option value="district">ຢູເຊີຂັ້ນເມືອງ</option>
+          <option value="group">ຢູເຊີຂັ້ນກຸ່ມ</option>
+          <option value="school">ຢູເຊີຂັ້ນໂຮງຮຽນ</option>
         </select>
       </div>
+
+      <!-- ກ່ອງເລືອກສິດການເຂົ້າເຖິງ (ຈະສະແດງ/ເຊື່ອງ ຕາມບົດບາດ) -->
+      <div id="loginScopeContainer" class="hidden space-y-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+         <div id="loginDistBox" class="hidden">
+            <label class="block text-xs font-semibold mb-1 text-blue-800">ກຳນົດສິດ: ເລືອກເມືອງ</label>
+            <select id="loginDistrict" onchange="populateLoginGroups()" class="w-full px-3 py-1.5 border rounded text-sm"></select>
+         </div>
+         <div id="loginGroupBox" class="hidden">
+            <label class="block text-xs font-semibold mb-1 text-blue-800">ກຳນົດສິດ: ເລືອກກຸ່ມໂຮງຮຽນ</label>
+            <select id="loginGroup" onchange="populateLoginSchools()" class="w-full px-3 py-1.5 border rounded text-sm"></select>
+         </div>
+         <div id="loginSchoolBox" class="hidden">
+            <label class="block text-xs font-semibold mb-1 text-blue-800">ກຳນົດສິດ: ເລືອກໂຮງຮຽນ</label>
+            <select id="loginSchool" class="w-full px-3 py-1.5 border rounded text-sm"></select>
+         </div>
+      </div>
+
       <button onclick="login()" class="btn btn-primary w-full">ເຂົ້າສູ່ລະບົບ</button>
     </div>
   </div>
@@ -805,19 +820,136 @@ function saveStudentScores() {
 function login() {
   const user = document.getElementById('loginUser').value;
   const role = document.getElementById('loginRole').value;
+  
+  let scopeInfo = { dCode: null, gCode: null, sCode: null };
+  if (role !== 'admin') {
+      const dCode = document.getElementById('loginDistrict').value;
+      const gCode = document.getElementById('loginGroup').value;
+      const sCode = document.getElementById('loginSchool').value;
+      
+      if (role === 'district' && !dCode) { showToast('ກະລຸນາເລືອກເມືອງ', 'error'); return; }
+      if (role === 'group' && (!dCode || !gCode)) { showToast('ກະລຸນາເລືອກກຸ່ມ', 'error'); return; }
+      if (role === 'school' && (!dCode || !gCode || !sCode)) { showToast('ກະລຸນາເລືອກໂຮງຮຽນ', 'error'); return; }
+      scopeInfo = { dCode, gCode, sCode };
+  }
+
   if (!user) { showToast('ກະລຸນາປ້ອນຊື່ຜູ້ໃຊ້', 'error'); return; }
-  state.user = { username: user, role: role };
+  
+  state.user = { username: user, role: role, scope: scopeInfo };
+  
+  // ຖ້າເປັນຂັ້ນໂຮງຮຽນ, ໃຫ້ເລືອກໂຮງຮຽນນັ້ນເລີຍອັດຕະໂນມັດ ບໍ່ຕ້ອງໃຫ້ເລືອກເອງ
+  if (role === 'school') {
+      state.school.code = scopeInfo.sCode;
+      const sSel = document.getElementById('loginSchool');
+      if(sSel.selectedIndex > 0) state.school.name = sSel.options[sSel.selectedIndex].text;
+  }
+  
   saveState();
   document.getElementById('loginScreen').classList.add('hidden');
   document.getElementById('appScreen').classList.remove('hidden');
-  const roleNames = {
-    school_admin: 'ຜູ້ອຳນວຍການໂຮງຮຽນ', teacher: 'ຄູສອນ', cpsb: 'ຄພສບ / ຊຸມຊົນ',
-    district: 'ຫ້ອງການສຶກສາ ເມືອງ', province: 'ພະແນກສຶກສາ ແຂວງ', super: 'ກົມປະກັນຄຸນນະພາບ'
-  };
+  
+  const roleNames = { admin: 'ADMIN (ສິດສູງສຸດ)', district: 'ຢູເຊີຂັ້ນເມືອງ', group: 'ຢູເຊີຂັ້ນກຸ່ມ', school: 'ຢູເຊີຂັ້ນໂຮງຮຽນ' };
   document.getElementById('userInfo').innerText = user + ' — ' + (roleNames[role] || role);
+  
+  if(typeof initLocationSelectors === 'function') initLocationSelectors(); 
+  if(typeof initSummaryFilters === 'function') initSummaryFilters();
+  
   renderAll();
+  if (typeof renderLocationTable === 'function') renderLocationTable();
+}
+// ========================================================
+// ຟັງຊັນສຳລັບຈັດການ ສິດການນຳໃຊ້ (RBAC) ຕອນ Login
+// ========================================================
+function onLoginRoleChange() {
+    const role = document.getElementById('loginRole').value;
+    const scopeCont = document.getElementById('loginScopeContainer');
+    const dBox = document.getElementById('loginDistBox');
+    const gBox = document.getElementById('loginGroupBox');
+    const sBox = document.getElementById('loginSchoolBox');
+    const dSel = document.getElementById('loginDistrict');
+    
+    if(role === 'admin') {
+        scopeCont.classList.add('hidden');
+    } else {
+        scopeCont.classList.remove('hidden');
+        dBox.classList.remove('hidden');
+        if(dSel.options.length === 0) {
+            let dHtml = '<option value="">-- ເລືອກເມືອງ --</option>';
+            LOCATION_DATA.forEach(d => dHtml += `<option value="${d.district_code}">${d.district_name}</option>`);
+            dSel.innerHTML = dHtml;
+        }
+        
+        if(role === 'district') {
+            gBox.classList.add('hidden'); sBox.classList.add('hidden');
+        } else if(role === 'group') {
+            gBox.classList.remove('hidden'); sBox.classList.add('hidden');
+        } else if(role === 'school') {
+            gBox.classList.remove('hidden'); sBox.classList.remove('hidden');
+        }
+    }
 }
 
+function populateLoginGroups() {
+    const dCode = document.getElementById('loginDistrict').value;
+    const gSel = document.getElementById('loginGroup');
+    const role = document.getElementById('loginRole').value;
+    gSel.innerHTML = '<option value="">-- ເລືອກກຸ່ມ --</option>';
+    if(!dCode) return;
+    
+    const dist = LOCATION_DATA.find(d => d.district_code === dCode);
+    if(dist && dist.groups) {
+        dist.groups.forEach(g => gSel.innerHTML += `<option value="${g.group_code}">${g.group_name}</option>`);
+    }
+    if(role === 'school') populateLoginSchools();
+}
+
+function populateLoginSchools() {
+    const dCode = document.getElementById('loginDistrict').value;
+    const gCode = document.getElementById('loginGroup').value;
+    const sSel = document.getElementById('loginSchool');
+    sSel.innerHTML = '<option value="">-- ເລືອກໂຮງຮຽນ --</option>';
+    if(!dCode || !gCode) return;
+    
+    const dist = LOCATION_DATA.find(d => d.district_code === dCode);
+    if(dist && dist.groups) {
+        const grp = dist.groups.find(g => g.group_code === gCode);
+        if(grp && grp.schools) {
+            grp.schools.forEach(s => sSel.innerHTML += `<option value="${s.school_code}">${s.school_name}</option>`);
+        }
+    }
+}
+
+// ຟັງຊັນກັ່ນຕອງຂໍ້ມູນໂຄງສ້າງ ອີງຕາມສິດຂອງຢູເຊີ (ແກນຫຼັກຂອງລະບົບ)
+function getAccessibleLocationData() {
+    if (!state.user || !state.user.role || state.user.role === 'admin') return LOCATION_DATA; 
+    
+    const scope = state.user.scope;
+    let accessibleData = JSON.parse(JSON.stringify(LOCATION_DATA)); // ຈຳລອງຂໍ້ມູນມາຕັດແຕ່ງ
+    
+    if (state.user.role === 'district') {
+        return accessibleData.filter(d => d.district_code === scope.dCode);
+    }
+    if (state.user.role === 'group') {
+        accessibleData = accessibleData.filter(d => d.district_code === scope.dCode);
+        accessibleData.forEach(d => {
+            if(d.groups) d.groups = d.groups.filter(g => g.group_code === scope.gCode);
+        });
+        return accessibleData;
+    }
+    if (state.user.role === 'school') {
+        accessibleData = accessibleData.filter(d => d.district_code === scope.dCode);
+        accessibleData.forEach(d => {
+            if(d.groups) {
+                d.groups = d.groups.filter(g => g.group_code === scope.gCode);
+                d.groups.forEach(g => {
+                    if(g.schools) g.schools = g.schools.filter(s => s.school_code === scope.sCode);
+                });
+            }
+        });
+        return accessibleData;
+    }
+    return LOCATION_DATA;
+}
 function logout() {
   state.user = null;
   saveState();
@@ -1464,12 +1596,21 @@ function initLocationSelectors() {
     const districtSelect = document.getElementById('filterDistrict');
     if (!districtSelect) return;
     
-    // ເພີ່ມຕົວເລືອກ ລວມທຸກເມືອງ
-    districtSelect.innerHTML = '<option value="">-- ເລືອກເມືອງ --</option><option value="all_districts">-- ລວມທຸກເມືອງ --</option>';
+    let htmlOpts = '<option value="">-- ເລືອກເມືອງ --</option>';
+    if(!state.user || state.user.role === 'admin') {
+        htmlOpts += '<option value="all_districts">-- ລວມທຸກເມືອງ --</option>';
+    }
     
-    LOCATION_DATA.forEach(d => {
-        districtSelect.innerHTML += `<option value="${d.district_code}">${d.district_name}</option>`;
+    getAccessibleLocationData().forEach(d => {
+        htmlOpts += `<option value="${d.district_code}">${d.district_name}</option>`;
     });
+    districtSelect.innerHTML = htmlOpts;
+    
+    // ລັອກການເລືອກ ຖ້າຢູເຊີຖືກຈຳກັດສິດແລ້ວ
+    if(state.user && state.user.role !== 'admin') {
+        districtSelect.value = state.user.scope.dCode;
+        onDistrictChange();
+    }
 }
 
 function onDistrictChange() {
@@ -1477,15 +1618,18 @@ function onDistrictChange() {
     const groupSelect = document.getElementById('filterGroup');
     const schoolSelect = document.getElementById('filterSchool');
     
-    // ເພີ່ມຕົວເລືອກ ລວມທຸກກຸ່ມ
-    groupSelect.innerHTML = '<option value="">-- ເລືອກກຸ່ມໂຮງຮຽນ --</option><option value="all_groups">-- ລວມທຸກກຸ່ມ --</option>';
+    let groupOpts = '<option value="">-- ເລືອກກຸ່ມໂຮງຮຽນ --</option>';
+    if(!state.user || state.user.role === 'admin' || state.user.role === 'district') {
+        groupOpts += '<option value="all_groups">-- ລວມທຸກກຸ່ມ --</option>';
+    }
+    groupSelect.innerHTML = groupOpts;
     schoolSelect.innerHTML = '<option value="">-- ເລືອກໂຮງຮຽນ --</option>';
     
     if (!districtCode) return;
+    const accessibleData = getAccessibleLocationData();
 
     if (districtCode === 'all_districts') {
-        // ຖ້າເລືອກ "ລວມທຸກເມືອງ" ໃຫ້ດຶງເອົາກຸ່ມທັງໝົດຂອງທຸກເມືອງມາສະແດງ
-        LOCATION_DATA.forEach(d => {
+        accessibleData.forEach(d => {
             if (d.groups) {
                 d.groups.forEach(g => {
                     groupSelect.innerHTML += `<option value="${g.group_code}">${g.group_name} (${d.district_name})</option>`;
@@ -1493,13 +1637,17 @@ function onDistrictChange() {
             }
         });
     } else {
-        // ຖ້າເລືອກເມືອງປົກກະຕິ
-        const district = LOCATION_DATA.find(d => d.district_code === districtCode);
+        const district = accessibleData.find(d => d.district_code === districtCode);
         if (district && district.groups) {
             district.groups.forEach(g => {
                 groupSelect.innerHTML += `<option value="${g.group_code}">${g.group_name}</option>`;
             });
         }
+    }
+    
+    if(state.user && (state.user.role === 'group' || state.user.role === 'school')) {
+        groupSelect.value = state.user.scope.gCode;
+        onGroupChange();
     }
 }
 
@@ -1508,61 +1656,58 @@ function onGroupChange() {
     const groupCode = document.getElementById('filterGroup').value;
     const schoolSelect = document.getElementById('filterSchool');
     
-    // ເພີ່ມຕົວເລືອກ ລວມທຸກໂຮງຮຽນ
-    schoolSelect.innerHTML = '<option value="">-- ເລືອກໂຮງຮຽນ --</option><option value="all_schools">-- ລວມທຸກໂຮງຮຽນ --</option>';
+    let schoolOpts = '<option value="">-- ເລືອກໂຮງຮຽນ --</option>';
+    if(!state.user || state.user.role !== 'school') {
+        schoolOpts += '<option value="all_schools">-- ລວມທຸກໂຮງຮຽນ --</option>';
+    }
+    schoolSelect.innerHTML = schoolOpts;
     
     if (!districtCode || !groupCode) return;
+    const accessibleData = getAccessibleLocationData();
     
     if (districtCode === 'all_districts') {
         if (groupCode === 'all_groups') {
-            // ຖ້າເລືອກ "ລວມທຸກເມືອງ" ແລະ "ລວມທຸກກຸ່ມ" ໃຫ້ສະແດງໂຮງຮຽນທັງໝົດໃນລະບົບ
-            LOCATION_DATA.forEach(d => {
-                if (d.groups) {
-                    d.groups.forEach(g => {
-                        if (g.schools) {
-                            g.schools.forEach(s => {
-                                schoolSelect.innerHTML += `<option value="${s.school_code}">${s.school_name} (${d.district_name})</option>`;
-                            });
-                        }
+            accessibleData.forEach(d => {
+                if (d.groups) d.groups.forEach(g => {
+                    if (g.schools) g.schools.forEach(s => {
+                        schoolSelect.innerHTML += `<option value="${s.school_code}">${s.school_name} (${d.district_name})</option>`;
                     });
-                }
+                });
             });
         } else {
-            // ຖ້າເລືອກ "ລວມທຸກເມືອງ" ແຕ່ເລືອກ "ກຸ່ມສະເພາະ"
-            LOCATION_DATA.forEach(d => {
+            accessibleData.forEach(d => {
                 if (d.groups) {
                     const group = d.groups.find(g => g.group_code === groupCode);
-                    if (group && group.schools) {
-                        group.schools.forEach(s => {
-                            schoolSelect.innerHTML += `<option value="${s.school_code}">${s.school_name} (${d.district_name})</option>`;
-                        });
-                    }
+                    if (group && group.schools) group.schools.forEach(s => {
+                        schoolSelect.innerHTML += `<option value="${s.school_code}">${s.school_name} (${d.district_name})</option>`;
+                    });
                 }
             });
         }
         return;
     }
 
-    const district = LOCATION_DATA.find(d => d.district_code === districtCode);
+    const district = accessibleData.find(d => d.district_code === districtCode);
     if (!district) return;
 
     if (groupCode === 'all_groups') {
-        // ຖ້າເລືອກ "ລວມທຸກກຸ່ມ" ພາຍໃນເມືອງໃດໜຶ່ງ
         district.groups.forEach(g => {
-            if (g.schools) {
-                g.schools.forEach(s => {
-                    schoolSelect.innerHTML += `<option value="${s.school_code}">${s.school_name} (${g.group_name})</option>`;
-                });
-            }
+            if (g.schools) g.schools.forEach(s => {
+                schoolSelect.innerHTML += `<option value="${s.school_code}">${s.school_name} (${g.group_name})</option>`;
+            });
         });
     } else {
-        // ຖ້າເລືອກກຸ່ມປົກກະຕິ
         const group = district.groups.find(g => g.group_code === groupCode);
         if (group && group.schools) {
             group.schools.forEach(s => {
                 schoolSelect.innerHTML += `<option value="${s.school_code}">${s.school_name}</option>`;
             });
         }
+    }
+    
+    if(state.user && state.user.role === 'school') {
+        schoolSelect.value = state.user.scope.sCode;
+        saveSchoolInfo(); // ໂຫຼດຂໍ້ມູນໂຮງຮຽນທັນທີ
     }
 }
 
@@ -1594,17 +1739,28 @@ function renderLocationTable(filterText = '') {
     if (!tbody) return;
 
     const data = getFlatLocationData();
+    const accessibleData = getAccessibleLocationData();
+    const accessibleSchoolCodes = [];
+    
+    // ລວບລວມເອົາແຕ່ລະຫັດໂຮງຮຽນທີ່ຢູເຊີມີສິດເຫັນ
+    accessibleData.forEach(d => {
+        if(d.groups) d.groups.forEach(g => {
+            if(g.schools) g.schools.forEach(s => accessibleSchoolCodes.push(s.school_code));
+        });
+    });
+
     const query = (filterText || document.getElementById('searchLocationInput')?.value || '').toLowerCase();
 
     const filtered = data.map((item, originalIndex) => {
         return { ...item, originalIndex: originalIndex };
     }).filter(item => 
-        (item.district_name || '').toLowerCase().includes(query) ||
+        accessibleSchoolCodes.includes(item.school_code) && // ຕອງເອົາສະເພາະໂຮງຮຽນທີ່ມີສິດເຫັນເທົ່ານັ້ນ
+        ((item.district_name || '').toLowerCase().includes(query) ||
         (item.group_name || '').toLowerCase().includes(query) ||
         (item.school_name || '').toLowerCase().includes(query) ||
         (item.district_code || '').includes(query) ||
         (item.group_code || '').includes(query) ||
-        (item.school_code || '').includes(query)
+        (item.school_code || '').includes(query))
     );
 
 if (filtered.length === 0) {
@@ -1945,32 +2101,50 @@ function initSummaryFilters() {
     }
 
     const distSelect = document.getElementById('sumFilterDistrict');
-    if (distSelect && distSelect.options.length <= 1) {
-        distSelect.innerHTML = '<option value="">-- ເລືອກເມືອງ --</option><option value="all">-- ລວມທຸກເມືອງ --</option>';
-        LOCATION_DATA.forEach(d => {
-            distSelect.innerHTML += `<option value="${d.district_code}">${d.district_name}</option>`;
+    if (distSelect) {
+        let htmlOpts = '<option value="">-- ເລືອກເມືອງ --</option>';
+        if(!state.user || state.user.role === 'admin') {
+            htmlOpts += '<option value="all">-- ລວມທຸກເມືອງ --</option>';
+        }
+        getAccessibleLocationData().forEach(d => {
+            htmlOpts += `<option value="${d.district_code}">${d.district_name}</option>`;
         });
+        distSelect.innerHTML = htmlOpts;
+        
+        if(state.user && state.user.role !== 'admin') {
+            distSelect.value = state.user.scope.dCode;
+            onSumDistrictChange();
+        }
     }
 }
 
 function onSumDistrictChange() {
     const dCode = document.getElementById('sumFilterDistrict').value;
     const gSelect = document.getElementById('sumFilterGroup');
-    gSelect.innerHTML = '<option value="">-- ເລືອກກຸ່ມ --</option><option value="all">-- ລວມທຸກກຸ່ມ --</option>';
+    
+    let htmlOpts = '<option value="">-- ເລືອກກຸ່ມ --</option>';
+    if(!state.user || state.user.role === 'admin' || state.user.role === 'district') {
+        htmlOpts += '<option value="all">-- ລວມທຸກກຸ່ມ --</option>';
+    }
+    gSelect.innerHTML = htmlOpts;
     
     if(!dCode || dCode === 'all') return;
 
-    const dist = LOCATION_DATA.find(d => d.district_code === dCode);
+    const dist = getAccessibleLocationData().find(d => d.district_code === dCode);
     if(dist && dist.groups) {
         dist.groups.forEach(g => {
             gSelect.innerHTML += `<option value="${g.group_code}">${g.group_name}</option>`;
         });
     }
+    
+    if(state.user && (state.user.role === 'group' || state.user.role === 'school')) {
+        gSelect.value = state.user.scope.gCode;
+    }
 }
 
 function getTargetSchools(dCode, gCode) {
     let targets = [];
-    LOCATION_DATA.forEach(d => {
+    getAccessibleLocationData().forEach(d => {
         if(dCode && dCode !== 'all' && d.district_code !== dCode) return;
         (d.groups || []).forEach(g => {
             if(gCode && gCode !== 'all' && g.group_code !== gCode) return;
