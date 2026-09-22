@@ -248,8 +248,9 @@
 
     <!-- ===== PART 3 ===== -->
     <div id="page-part3" class="page hidden">
-      <div class="sticky -top-6 z-25 bg-[#f1f5f9] pt-6 pb-4 mb-2">
-        <div class="flex justify-between items-center flex-wrap gap-3">
+      <!-- 1. ສ່ວນຫົວທີ່ຢຶດຕິດ (ລວມເອົາ Title + ຫົວຕາຕະລາງ ມາຢຶດຕິດໄປພ້ອມກັນ) -->
+      <div class="sticky -top-6 z-30 bg-[#f1f5f9] pt-6 pb-0">
+        <div class="flex justify-between items-center flex-wrap gap-3 mb-3">
           <div>
             <h1 class="text-2xl font-bold text-gray-800">ປະເມີນ ພາກທີ III: ຜົນການຮຽນຂອງນັກຮຽນ (ປ.1 - ປ.5)</h1>
             <p class="text-gray-500 text-sm mt-1">ບັນທຶກຜົນການປະເມີນລາຍບຸກຄົນ (1 = ຜ່ານ/ແກ້ໄດ້, 0 = ບໍ່ຜ່ານ/ແກ້ບໍ່ໄດ້) — ນ້ຳໜັກ 50%</p>
@@ -261,18 +262,47 @@
             <button class="btn btn-success" onclick="addStudentScoreRow()">＋ ເພີ່ມຊື່ນັກຮຽນ</button>
           </div>
         </div>
+        
+        <!-- ຕາຕະລາງສ່ວນຫົວ (Visual Header ຢຶດຕິດໄປພ້ອມກັບຫົວຂໍ້ດ້ານເທິງ) -->
+        <div class="bg-white rounded-t-xl shadow-sm border-b-2 border-gray-200 overflow-hidden">
+          <table class="w-full">
+            <colgroup>
+              <col style="width: 60px;">
+              <col>
+              <col style="width: 150px;">
+              <col style="width: 150px;">
+              <col style="width: 80px;">
+            </colgroup>
+            <thead>
+              <tr>
+                <th style="text-align: center;" class="py-3">ລ/ດ</th>
+                <th class="py-3 text-left">ຊື່ ແລະ ນາມສະກຸນ (ນັກຮຽນ)</th>
+                <th style="text-align: center;" class="py-3">ພາສາລາວ (1 ຫຼື 0)</th>
+                <th style="text-align: center;" class="py-3">ຄະນິດສາດ (1 ຫຼື 0)</th>
+                <th style="text-align: center;" class="py-3">ຈັດການ</th>
+              </tr>
+            </thead>
+          </table>
+        </div>
       </div>
-      <div class="card mb-4 relative">
+
+      <!-- 2. ສ່ວນເນື້ອໃນຕາຕະລາງ (Table Body ປ່ອຍໃຫ້ເລື່ອນໄປຕາມໜ້າຈໍຫຼັກ) -->
+      <div class="bg-white rounded-b-xl shadow-sm mb-4 relative overflow-hidden">
         <table class="w-full">
-          <thead class="sticky top-[95px] md:top-[85px] bg-white z-10 shadow-sm border-b-2 border-gray-200">
-            <tr>
-              <th style="width: 60px; text-align: center;" class="py-3">ລ/ດ</th><th class="py-3">ຊື່ ແລະ ນາມສະກຸນ (ນັກຮຽນ)</th><th style="width: 150px; text-align: center;" class="py-3">ພາສາລາວ (1 ຫຼື 0)</th><th style="width: 150px; text-align: center;" class="py-3">ຄະນິດສາດ (1 ຫຼື 0)</th><th style="width: 80px; text-align: center;" class="py-3">ຈັດການ</th>
-            </tr>
-          </thead>
+          <colgroup>
+            <col style="width: 60px;">
+            <col>
+            <col style="width: 150px;">
+            <col style="width: 150px;">
+            <col style="width: 80px;">
+          </colgroup>
           <tbody id="part3TableBody"></tbody>
           <tfoot class="sticky bottom-0 bg-white shadow-[0_-3px_5px_rgba(0,0,0,0.06)] z-20 border-t-2 border-gray-300">
             <tr>
-              <td colspan="2" class="py-4 pr-6 font-bold text-red-600 text-lg" style="text-align: right;">ສ່ວນຮ້ອຍຂອງດ້ານ</td><td style="text-align: center;" class="font-bold text-red-600 text-xl" id="tableLaoPct">0.00%</td><td style="text-align: center;" class="font-bold text-red-600 text-xl" id="tableMathPct">0.00%</td><td></td>
+              <td colspan="2" class="py-4 pr-6 font-bold text-red-600 text-lg" style="text-align: right;">ສ່ວນຮ້ອຍຂອງດ້ານ</td>
+              <td style="text-align: center;" class="font-bold text-red-600 text-xl" id="tableLaoPct">0.00%</td>
+              <td style="text-align: center;" class="font-bold text-red-600 text-xl" id="tableMathPct">0.00%</td>
+              <td></td>
             </tr>
           </tfoot>
         </table>
