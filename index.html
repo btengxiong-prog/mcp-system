@@ -2508,20 +2508,21 @@ function generateSummaryReport() {
 
     document.getElementById('summaryGroupTableContainer').innerHTML = '<div class="text-center py-10 text-blue-600 font-bold">ກຳລັງດຶງຂໍ້ມູນຈາກຖານຂໍ້ມູນ... ⏳</div>';
 
-    // ດຶງຂໍ້ມູນຈາກ Firebase ທັງໝົດ ແລ້ວມາຕອງເອົາສະເພາະໂຮງຮຽນເປົ້າໝາຍ
-    db.ref('schools').once('value').then(snapshot => {
-        const allData = snapshot.val() || {};
-        renderSummaryGroupTable(targetSchools, allData, year);
+    // ດຶງຂໍ້ມູນທັງ schools ແລະ studentScores ເພື່ອເອົາມາໄລ່ ພາກ 3 ພ້ອມ
+    db.ref('schools').once('value').then(schoolSnap => {
+        const allSchoolsData = schoolSnap.val() || {};
+        db.ref('studentScores').once('value').then(studentSnap => {
+            const allStudentData = studentSnap.val() || {};
+            renderSummaryGroupTable(targetSchools, allSchoolsData, allStudentData, year);
+        });
     }).catch(err => {
         alert("ດຶງຂໍ້ມູນບໍ່ສຳເລັດ: " + err.message);
     });
 }
 
-function renderSummaryGroupTable(schools, allData, year) {
-    // ເອົາ div wrapper ທີ່ຊ້ອນກັນອອກ ເພື່ອໃຫ້ Card ຫຼັກຈັດການ Scrollbar ອັນດຽວຈົບ
+function renderSummaryGroupTable(schools, allSchoolsData, allStudentData, year) {
     let html = '<table class="w-full border-collapse border-b border-gray-400 min-w-[800px] text-sm bg-white">';
     
-    // ຫົວຕາຕະລາງ (ເພີ່ມ z-20 ເພື່ອຢຶດສ່ວນຫົວໃຫ້ແໜ້ນຂຶ້ນ ແລະ ຢຶດຖັນທຳອິດໄວ້ຊ້າຍມື)
     html += '<thead class="bg-gray-100 sticky top-0 z-20 shadow-md"><tr>';
     html += '<th class="border border-gray-400 p-2 min-w-[300px] text-left sticky left-0 z-30 bg-gray-100 shadow-[2px_0_4px_rgba(0,0,0,0.05)]">ເນື້ອໃນ / ຕົວຊີ້ວັດ</th>';
     schools.forEach((s, i) => {
@@ -2530,18 +2531,15 @@ function renderSummaryGroupTable(schools, allData, year) {
     html += `<th class="border border-gray-400 p-2 text-center min-w-[180px] bg-blue-100 text-blue-800">ລວມ ${schools.length} ໂຮງຮຽນ</th>`;
     html += '</tr></thead><tbody>';
 
-const buildRowsForPart = (partNum, title, aspectsList) => {
-        // ແຖວຫົວຂໍ້ພາກໃຫຍ່ (ໃຊ້ <div> ຢຶດຕິດທາງຊ້າຍ ພາຍໃນ td ທີ່ colspan)
+    const buildRowsForPart = (partNum, title, aspectsList) => {
         let rows = `<tr>
             <td colspan="${schools.length + 2}" class="bg-blue-600 border border-blue-700 p-0">
                 <div class="sticky left-0 inline-block text-white font-bold p-3 text-base z-10">${title}</div>
             </td>
         </tr>`;
         
-        let qIndex = 0; // ຕົວນັບ index ຂອງແຕ່ລະພາກ
-
+        let qIndex = 0; 
         aspectsList.forEach(aspect => {
-            // ແຖວຫົວຂໍ້ດ້ານ (ໃຊ້ <div> ຢຶດຕິດທາງຊ້າຍ ພາຍໃນ td ທີ່ colspan)
             rows += `<tr class="bg-blue-50">
                 <td colspan="${schools.length + 2}" class="border border-gray-400 p-0">
                     <div class="sticky left-0 inline-block p-2 font-bold text-blue-800 z-10">${aspect.name}</div>
@@ -2549,7 +2547,6 @@ const buildRowsForPart = (partNum, title, aspectsList) => {
             </tr>`;
             
             aspect.indicators.forEach(ind => {
-                // ແຖວຕົວຊີ້ວັດ (ໃຫ້ td ທຳອິດຢຶດຊ້າຍຄືເກົ່າ)
                 rows += `<tr>
                     <td class="border border-gray-400 p-2 sticky left-0 z-10 bg-white shadow-[2px_0_4px_rgba(0,0,0,0.05)]">${ind}</td>`;
                     
@@ -2558,7 +2555,7 @@ const buildRowsForPart = (partNum, title, aspectsList) => {
 
                 schools.forEach(s => {
                     const sKey = s.code + '_' + year;
-                    const sData = allData[sKey];
+                    const sData = allSchoolsData[sKey];
                     const pData = sData ? sData['part'+partNum] : null;
                     const val = pData ? pData[qIndex] : null;
                     
@@ -2589,13 +2586,82 @@ const buildRowsForPart = (partNum, title, aspectsList) => {
         return rows;
     };
 
-    // ພາກທີ 1 ແລະ 2
-    html += buildRowsForPart(1, 'ພາກທີ I: ປັດໄຈນຳເຂົ້າ', MCP_DATA.part1.aspects);
-        html += buildRowsForPart(2, 'ພາກທີ II: ຂະບວນການ ແລະ ພຶດຕິກຳ', MCP_DATA.part2.aspects);
+    const buildRowsForPart3 = () => {
+        let rows = `<tr>
+            <td colspan="${schools.length + 2}" class="bg-blue-600 border border-blue-700 p-0">
+                <div class="sticky left-0 inline-block text-white font-bold p-3 text-base z-10">ພາກທີ III: ຜົນການຮຽນຂອງນັກຮຽນ (ປ.1 - ປ.5)</div>
+            </td>
+        </tr>`;
 
-        html += '</tbody></table>';
-        document.getElementById('summaryGroupTableContainer').innerHTML = html;
-    }
+        const grades = ['ປ.1', 'ປ.2', 'ປ.3', 'ປ.4', 'ປ.5'];
+
+        MCP_DATA.part3.aspects.forEach((aspect, aIndex) => {
+            const subjectKey = aIndex === 0 ? 'lao' : 'math';
+            
+            rows += `<tr class="bg-blue-50">
+                <td colspan="${schools.length + 2}" class="border border-gray-400 p-0">
+                    <div class="sticky left-0 inline-block p-2 font-bold text-blue-800 z-10">${aspect.name}</div>
+                </td>
+            </tr>`;
+
+            aspect.indicators.forEach((ind, iIndex) => {
+                const grade = grades[iIndex];
+                
+                rows += `<tr>
+                    <td class="border border-gray-400 p-2 sticky left-0 z-10 bg-white shadow-[2px_0_4px_rgba(0,0,0,0.05)]">${ind}</td>`;
+                    
+                let totalPercentSum = 0;
+                let validSchools = 0;
+
+                schools.forEach(s => {
+                    const sKey = s.code + '_' + year;
+                    const sScores = allStudentData[sKey] || {};
+                    const gradeKey = grade.replace('.', '_'); 
+                    const list = sScores[gradeKey] || [];
+                    const listArray = Array.isArray(list) ? list : Object.values(list);
+
+                    let totalPassSubject = 0, totalStudents = 0;
+                    listArray.forEach(st => {
+                        if (st && st[subjectKey] !== undefined) {
+                            totalStudents++;
+                            if (Number(st[subjectKey]) === 1) totalPassSubject++;
+                        }
+                    });
+
+                    if (totalStudents > 0) {
+                        let percent = (totalPassSubject / totalStudents) * 100;
+                        rows += `<td class="border border-gray-400 p-2 text-center font-bold">${percent.toFixed(2)}%</td>`;
+                        totalPercentSum += percent;
+                        validSchools++;
+                    } else {
+                        rows += `<td class="border border-gray-400 p-2 text-center text-gray-400">-</td>`;
+                    }
+                });
+
+                if (validSchools > 0) {
+                    const avg = totalPercentSum / validSchools;
+                    let statusHtml = '';
+                    if (avg >= 75) statusHtml = '<span class="font-bold text-green-600">✓ ຜ່ານເກນ</span>';
+                    else if (avg >= 50) statusHtml = '<span class="font-bold text-yellow-600">~ ປັບປຸງໜ້ອຍ</span>';
+                    else statusHtml = '<span class="font-bold text-red-600">X ປັບປຸງຫຼາຍ</span>';
+
+                    rows += `<td class="border border-gray-400 p-2 text-left bg-gray-50 pl-4">${statusHtml} (${avg.toFixed(2)}%)</td>`;
+                } else {
+                    rows += `<td class="border border-gray-400 p-2 text-center bg-gray-50 text-gray-400">-</td>`;
+                }
+                rows += '</tr>';
+            });
+        });
+        return rows;
+    };
+
+    html += buildRowsForPart(1, 'ພາກທີ I: ປັດໄຈນຳເຂົ້າ', MCP_DATA.part1.aspects);
+    html += buildRowsForPart(2, 'ພາກທີ II: ຂະບວນການ ແລະ ພຶດຕິກຳ', MCP_DATA.part2.aspects);
+    html += buildRowsForPart3();
+
+    html += '</tbody></table>';
+    document.getElementById('summaryGroupTableContainer').innerHTML = html;
+}
 
 function printSummaryGroup() {
     const dCode = document.getElementById('sumFilterDistrict').value;
