@@ -124,6 +124,9 @@
       <div class="sidebar-item px-4 py-3 cursor-pointer flex items-center gap-2" data-page="report" onclick="navigate('report')">
         <span>📄</span><span>ລາຍງານ</span>
       </div>
+      <div class="sidebar-item px-4 py-3 cursor-pointer flex items-center gap-2" data-page="summary_group" onclick="navigate('summary_group')">
+        <span>📑</span><span>ສັງລວມ ກຸ່ມ/ເມືອງ</span>
+      </div>
     </nav>
     <div class="p-4 mt-4 border-t border-blue-700">
       <button onclick="logout()" class="btn btn-danger w-full text-sm">ອອກຈາກລະບົບ</button>
@@ -366,6 +369,37 @@
         </div>
       </div>
     </div>
+
+    <!-- ===== SUMMARY GROUP/DISTRICT ===== -->
+    <div id="page-summary_group" class="page hidden flex-col h-[calc(100vh-3rem)]">
+      <div class="sticky top-0 z-20 bg-[#f1f5f9] pb-4 pt-1 flex-shrink-0">
+         <h1 class="text-2xl font-bold text-gray-800 mb-4">ສັງລວມຜົນການປະເມີນ ມຄພ ຂັ້ນກຸ່ມ/ເມືອງ</h1>
+         <div class="card p-4 flex gap-4 items-center flex-wrap">
+            <div>
+              <label class="block text-sm font-semibold mb-1">ເມືອງ</label>
+              <select id="sumFilterDistrict" onchange="onSumDistrictChange()" class="w-48 px-3 py-2 border rounded-lg bg-white"><option value="">-- ເລືອກເມືອງ --</option></select>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold mb-1">ກຸ່ມໂຮງຮຽນ</label>
+              <select id="sumFilterGroup" class="w-48 px-3 py-2 border rounded-lg bg-white"><option value="">-- ເລືອກກຸ່ມ --</option></select>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold mb-1">ສົກຮຽນ</label>
+              <select id="sumAcademicYear" class="w-32 px-3 py-2 border rounded-lg bg-white"></select>
+            </div>
+            <div class="mt-6 flex gap-2">
+               <button onclick="generateSummaryReport()" class="btn btn-primary shadow">📊 ດຶງຂໍ້ມູນສັງລວມ</button>
+               <button onclick="printSummaryGroup()" class="btn btn-success shadow">🖨️ ພິມລາຍງານ</button>
+            </div>
+         </div>
+      </div>
+      <div class="card flex-1 overflow-auto mt-2">
+         <div id="summaryGroupTableContainer" class="w-full">
+            <div class="text-center text-gray-400 py-12 text-lg">ກະລຸນາເລືອກເມືອງ, ກຸ່ມ ແລະ ສົກຮຽນ ແລ້ວກົດ "ດຶງຂໍ້ມູນສັງລວມ"</div>
+         </div>
+      </div>
+    </div>
+
   </main>
 </div>
 
@@ -795,6 +829,7 @@ function navigate(page) {
   if (page === 'priority') renderPriority();
   if (page === 'plan') renderPlan();
   if (page === 'report') renderReport();
+  if (page === 'summary_group') initSummaryFilters();
 }
 
 function renderPartForm(partNum, containerId) {
@@ -1870,7 +1905,190 @@ function renderAll() {
   renderDashboard();
   calculateAll();
 }
+// ========================================================
+// ຊຸດຄຳສັ່ງສຳລັບການສັງລວມ ຂັ້ນກຸ່ມ/ເມືອງ
+// ========================================================
+function initSummaryFilters() {
+    const ay = document.getElementById('sumAcademicYear');
+    if (ay && ay.options.length === 0) {
+        const currentYear = new Date().getFullYear();
+        let htmlOptions = '';
+        for (let i = currentYear - 2; i <= currentYear + 5; i++) {
+            htmlOptions += `<option value="${i}-${i+1}">${i}-${i+1}</option>`;
+        }
+        ay.innerHTML = htmlOptions;
+        ay.value = state.school.year || `${currentYear}-${currentYear+1}`;
+    }
 
+    const distSelect = document.getElementById('sumFilterDistrict');
+    if (distSelect && distSelect.options.length <= 1) {
+        distSelect.innerHTML = '<option value="">-- ເລືອກເມືອງ --</option><option value="all">-- ລວມທຸກເມືອງ --</option>';
+        LOCATION_DATA.forEach(d => {
+            distSelect.innerHTML += `<option value="${d.district_code}">${d.district_name}</option>`;
+        });
+    }
+}
+
+function onSumDistrictChange() {
+    const dCode = document.getElementById('sumFilterDistrict').value;
+    const gSelect = document.getElementById('sumFilterGroup');
+    gSelect.innerHTML = '<option value="">-- ເລືອກກຸ່ມ --</option><option value="all">-- ລວມທຸກກຸ່ມ --</option>';
+    
+    if(!dCode || dCode === 'all') return;
+
+    const dist = LOCATION_DATA.find(d => d.district_code === dCode);
+    if(dist && dist.groups) {
+        dist.groups.forEach(g => {
+            gSelect.innerHTML += `<option value="${g.group_code}">${g.group_name}</option>`;
+        });
+    }
+}
+
+function getTargetSchools(dCode, gCode) {
+    let targets = [];
+    LOCATION_DATA.forEach(d => {
+        if(dCode && dCode !== 'all' && d.district_code !== dCode) return;
+        (d.groups || []).forEach(g => {
+            if(gCode && gCode !== 'all' && g.group_code !== gCode) return;
+            (g.schools || []).forEach(s => {
+                targets.push({code: s.school_code, name: s.school_name});
+            });
+        });
+    });
+    return targets;
+}
+
+function generateSummaryReport() {
+    const dCode = document.getElementById('sumFilterDistrict').value;
+    const gCode = document.getElementById('sumFilterGroup').value;
+    const year = document.getElementById('sumAcademicYear').value;
+    
+    if(!dCode || !gCode) {
+        showToast('ກະລຸນາເລືອກເມືອງ ແລະ ກຸ່ມກ່ອນ', 'warning');
+        return;
+    }
+
+    const targetSchools = getTargetSchools(dCode, gCode);
+    if(targetSchools.length === 0) {
+        document.getElementById('summaryGroupTableContainer').innerHTML = '<div class="text-center py-10 text-red-500 font-bold">ບໍ່ພົບໂຮງຮຽນໃນກຸ່ມ/ເມືອງນີ້</div>';
+        return;
+    }
+
+    document.getElementById('summaryGroupTableContainer').innerHTML = '<div class="text-center py-10 text-blue-600 font-bold">ກຳລັງດຶງຂໍ້ມູນຈາກຖານຂໍ້ມູນ... ⏳</div>';
+
+    // ດຶງຂໍ້ມູນຈາກ Firebase ທັງໝົດ ແລ້ວມາຕອງເອົາສະເພາະໂຮງຮຽນເປົ້າໝາຍ
+    db.ref('schools').once('value').then(snapshot => {
+        const allData = snapshot.val() || {};
+        renderSummaryGroupTable(targetSchools, allData, year);
+    }).catch(err => {
+        alert("ດຶງຂໍ້ມູນບໍ່ສຳເລັດ: " + err.message);
+    });
+}
+
+function renderSummaryGroupTable(schools, allData, year) {
+    let html = '<div class="overflow-x-auto"><table class="w-full border-collapse border border-gray-400 min-w-[800px] text-sm">';
+    
+    // ຫົວຕາຕະລາງ (ຕີແຜ່ຈຳນວນໂຮງຮຽນຕາມແນວນອນ)
+    html += '<thead class="bg-gray-100 sticky top-0 z-10 shadow-sm"><tr>';
+    html += '<th class="border border-gray-400 p-2 min-w-[300px] text-left">ເນື້ອໃນ / ຕົວຊີ້ວັດ</th>';
+    schools.forEach((s, i) => {
+        html += `<th class="border border-gray-400 p-2 text-center min-w-[100px]">ໂຮງຮຽນທີ່ ${i+1}<br><span class="font-normal text-xs text-blue-700">${s.name}</span></th>`;
+    });
+    html += `<th class="border border-gray-400 p-2 text-center min-w-[180px] bg-blue-100 text-blue-800">ລວມ ${schools.length} ໂຮງຮຽນ</th>`;
+    html += '</tr></thead><tbody>';
+
+    const buildRowsForPart = (partNum, title, aspectsList) => {
+        let rows = `<tr><td colspan="${schools.length + 2}" class="bg-blue-600 text-white font-bold p-3 text-base text-center">${title}</td></tr>`;
+        let qIndex = 0; // ຕົວນັບ index ຂອງແຕ່ລະພາກ
+
+        aspectsList.forEach(aspect => {
+            rows += `<tr class="bg-blue-50"><td class="border border-gray-400 p-2 font-bold text-blue-800" colspan="${schools.length + 2}">${aspect.name}</td></tr>`;
+            aspect.indicators.forEach(ind => {
+                rows += `<tr><td class="border border-gray-400 p-2">${ind}</td>`;
+                
+                let totalScore = 0;
+                let evalCount = 0; // ໂຮງຮຽນທີ່ປະເມີນຂໍ້ນີ້ແລ້ວ
+
+                schools.forEach(s => {
+                    const sKey = s.code + '_' + year;
+                    const sData = allData[sKey];
+                    const pData = sData ? sData['part'+partNum] : null;
+                    const val = pData ? pData[qIndex] : null;
+                    
+                    let cellTxt = '';
+                    if(val === 'pass') { cellTxt = '100%'; totalScore += 100; evalCount++; }
+                    else if(val === 'improve') { cellTxt = '50%'; totalScore += 50; evalCount++; }
+                    else if(val === 'fail') { cellTxt = '0%'; totalScore += 0; evalCount++; }
+                    else { cellTxt = ''; }
+
+                    rows += `<td class="border border-gray-400 p-2 text-center">${cellTxt}</td>`;
+                });
+
+                // ຖັນສຸດທ້າຍ: ຄຳນວນຄ່າສະເລ່ຍ ແລະ ທຽບເກນ
+                if (evalCount > 0) {
+                    const avg = totalScore / schools.length; // ຫານໂຮງຮຽນທັງໝົດໃນກຸ່ມຕາມຫຼັກການ
+                    let statusHtml = '';
+                    if (avg >= 75) statusHtml = '<span class="font-bold text-green-600">✓ ຜ່ານເກນ</span>';
+                    else if (avg >= 50) statusHtml = '<span class="font-bold text-yellow-600">~ ປັບປຸງໜ້ອຍ</span>';
+                    else statusHtml = '<span class="font-bold text-red-600">X ປັບປຸງຫຼາຍ</span>';
+
+                    rows += `<td class="border border-gray-400 p-2 text-left bg-gray-50 pl-4">${statusHtml} (${avg.toFixed(2)}%)</td>`;
+                } else {
+                    rows += `<td class="border border-gray-400 p-2 text-center bg-gray-50 text-gray-400">-</td>`;
+                }
+                rows += '</tr>';
+                qIndex++;
+            });
+        });
+        return rows;
+    };
+
+    // ພາກທີ 1 ແລະ 2
+    html += buildRowsForPart(1, 'ພາກທີ I: ປັດໄຈນຳເຂົ້າ', MCP_DATA.part1.aspects);
+    html += buildRowsForPart(2, 'ພາກທີ II: ຂະບວນການ ແລະ ພຶດຕິກຳ', MCP_DATA.part2.aspects);
+
+    html += '</tbody></table></div>';
+    document.getElementById('summaryGroupTableContainer').innerHTML = html;
+}
+
+function printSummaryGroup() {
+    const tableDiv = document.getElementById('summaryGroupTableContainer');
+    if(!tableDiv || tableDiv.innerText.includes('ກະລຸນາເລືອກ')) {
+        showToast('ກະລຸນາດຶງຂໍ້ມູນກ່ອນພິມ!', 'warning'); return;
+    }
+    
+    const dist = document.getElementById('sumFilterDistrict').options[document.getElementById('sumFilterDistrict').selectedIndex].text;
+    const grp = document.getElementById('sumFilterGroup').options[document.getElementById('sumFilterGroup').selectedIndex].text;
+    const year = document.getElementById('sumAcademicYear').value;
+
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+        <html><head>
+        <title>ພິມສັງລວມ ມຄພ ${grp}</title>
+        <style>
+            body { font-family: 'Noto Sans Lao', sans-serif; padding: 20px; }
+            table { width: 100%; border-collapse: collapse; font-size: 11px; }
+            th, td { border: 1px solid #000; padding: 6px; }
+            th { background: #f0f0f0; }
+            h2, h3 { text-align: center; margin-bottom: 5px; margin-top: 5px; }
+            .text-center { text-align: center; }
+            .bg-blue-600 { background-color: #e2e8f0 !important; font-weight: bold; -webkit-print-color-adjust: exact; }
+            .bg-blue-50 { background-color: #f8fafc !important; font-weight: bold; -webkit-print-color-adjust: exact; }
+            .text-green-600 { color: #000 !important; font-weight: bold; }
+            .text-yellow-600 { color: #000 !important; font-weight: bold; }
+            .text-red-600 { color: #000 !important; font-weight: bold; }
+            @page { size: landscape; margin: 10mm; }
+        </style>
+        </head><body>
+        <h2>ສັງລວມຜົນການປະເມີນ ມຄພ ຂັ້ນພື້ນຖານ (ພາກ I-II)</h2>
+        <h3>${dist} — ${grp} | ສົກຮຽນ: ${year}</h3>
+        <br>
+        ${tableDiv.innerHTML}
+        </body></html>
+    `);
+    printWindow.document.close();
+    setTimeout(() => { printWindow.print(); }, 500);
+}
 loadState();
 if (state.user) {
   document.getElementById('loginScreen').classList.add('hidden');
