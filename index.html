@@ -403,10 +403,13 @@
     </div>
 
     <!-- ===== SUMMARY GROUP/DISTRICT ===== -->
-    <div id="page-summary_group" class="page hidden">
-      <div class="bg-[#f1f5f9] pb-4 pt-2">
-         <h1 class="text-2xl font-bold text-gray-800 mb-4">ສັງລວມຜົນການປະເມີນ ມຄພ ຂັ້ນກຸ່ມ/ເມືອງ</h1>
-         <div class="card p-4 flex gap-4 items-center flex-wrap">
+    <!-- ກຳນົດ h-[calc(100vh-10rem)] ເພື່ອລັອກຄວາມສູງໜ້າຈໍ ບໍ່ໃຫ້ໄປທັບ Footer -->
+    <div id="page-summary_group" class="page hidden flex flex-col h-[calc(100vh-10rem)]">
+      
+      <!-- 1. ສ່ວນຫົວ (Title + Filters) ລັອກໄວ້ບໍ່ໃຫ້ຫຍໍ້/ຂະຫຍາຍ (flex-shrink-0) -->
+      <div class="bg-[#f1f5f9] pb-3 pt-1 flex-shrink-0 z-20">
+         <h1 class="text-2xl font-bold text-gray-800 mb-3">ສັງລວມຜົນການປະເມີນ ມຄພ ຂັ້ນກຸ່ມ/ເມືອງ</h1>
+         <div class="card p-4 flex gap-4 items-center flex-wrap shadow-sm">
             <div>
               <label class="block text-sm font-semibold mb-1">ເມືອງ</label>
               <select id="sumFilterDistrict" onchange="onSumDistrictChange()" class="w-48 px-3 py-2 border rounded-lg bg-white"><option value="">-- ເລືອກເມືອງ --</option></select>
@@ -425,11 +428,15 @@
             </div>
          </div>
       </div>
-      <div class="card overflow-x-auto mb-4">
-         <div id="summaryGroupTableContainer" class="w-full">
+
+      <!-- 2. ສ່ວນຕາຕະລາງ (ໃຫ້ມີ Scrollbar ຂຶ້ນ-ລົງ ແລະ ຊ້າຍ-ຂວາ ພາຍໃນກ່ອງນີ້ເທົ່ານັ້ນ) -->
+      <div class="card flex-1 overflow-auto mt-2 border border-gray-200 relative">
+         <!-- min-w-max ຊ່ວຍບໍ່ໃຫ້ຕາຕະລາງຫຍໍ້ຕົວເຂົ້າຫາກັນຈົນເບິ່ງຍາກ -->
+         <div id="summaryGroupTableContainer" class="min-w-max">
             <div class="text-center text-gray-400 py-12 text-lg">ກະລຸນາເລືອກເມືອງ, ກຸ່ມ ແລະ ສົກຮຽນ ແລ້ວກົດ "ດຶງຂໍ້ມູນສັງລວມ"</div>
          </div>
       </div>
+      
     </div>
 <!-- ===== USER MANAGEMENT (ADMIN ONLY) ===== -->
     <div id="page-users" class="page hidden flex flex-col h-[calc(100vh-3rem)]">
