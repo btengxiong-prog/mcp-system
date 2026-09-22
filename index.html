@@ -319,7 +319,7 @@
         <h2 class="section-title">1. ຄາດໝາຍ</h2>
         <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
           <div><label class="text-sm font-semibold">ອັດຕາ ມຄພ ປັດຈຸບັນ</label><input id="planCurrent" type="text" readonly class="w-full px-3 py-2 border rounded-lg bg-gray-100"></div>
-          <div><label class="text-sm font-semibold">ອັດຕາ ມຄພ ຄາດໝາຍ</label><input id="planTarget" type="number" step="0.01" value="75" class="w-full px-3 py-2 border rounded-lg"></div>
+          <div><label class="text-sm font-semibold">ອັດຕາ ມຄພ ຄາດໝາຍ</label><input id="planTarget" type="number" step="0.01" class="w-full px-3 py-2 border rounded-lg" oninput="updatePlanTargetUI(this.value)"></div>
           <div><label class="text-sm font-semibold">ຄ່າເພີ່ມ</label><input id="planDiff" type="text" readonly class="w-full px-3 py-2 border rounded-lg bg-gray-100"></div>
           <div><label class="text-sm font-semibold">ປະເພດເປົ້າໝາຍ</label><input id="planCategory" type="text" readonly class="w-full px-3 py-2 border rounded-lg bg-gray-100"></div>
         </div>
@@ -797,7 +797,8 @@ function loadSchoolData() {
       state.part3 = data.part3 || {};
       state.focusAreas = data.focusAreas || [];
       state.activities = data.activities || [];
-      state.planTarget = data.planTarget || 75;
+      // ປ່ຽນການກວດສອບ ເພື່ອໃຫ້ຮັບຄ່າ 0 ໄດ້ ໂດຍບໍ່ເด้ງເປັນ 75
+      state.planTarget = data.planTarget !== undefined ? data.planTarget : 75;
     } else {
       state.part1 = {}; state.part2 = {}; state.part3 = {};
       state.focusAreas = []; state.activities = []; state.planTarget = 75;
@@ -1715,7 +1716,20 @@ function renderActivityList() {
 function addActivity() { state.activities.push({ name: '', code: '', budget: '', source: 'ເງິນບໍລິຫານ', time: '', responsible: '' }); saveState(); renderActivityList(); }
 function removeActivity(i) { state.activities.splice(i, 1); saveState(); renderActivityList(); }
 function updateActivity(i, field, val) { state.activities[i][field] = val; saveState(); }
-function savePlan() { state.planTarget = parseFloat(document.getElementById('planTarget').value) || 75; saveState(); showToast('ບັນທຶກແຜນພັດທະນາສຳເລັດ', 'success'); renderPlan(); }
+function savePlan() { 
+    let pVal = parseFloat(document.getElementById('planTarget').value); 
+    state.planTarget = isNaN(pVal) ? 0 : pVal; // ຖ້າປ້ອນຄ່າວ່າງໃຫ້ເປັນ 0 ແທນທີ່ຈະບັງຄັບເປັນ 75
+    saveState(); 
+    showToast('ບັນທຶກແຜນພັດທະນາສຳເລັດ', 'success'); 
+    renderPlan(); 
+}
+
+// ຟັງຊັນໃໝ່ສຳລັບອັບເດດຄ່າເພີ່ມ (Diff) ທັນທີເວລາຜູ້ໃຊ້ພິມປ່ຽນເປີເຊັນຄາດໝາຍ
+function updatePlanTargetUI(val) {
+    let pVal = parseFloat(val);
+    state.planTarget = isNaN(pVal) ? 0 : pVal;
+    calculateAll(); // ສັ່ງໃຫ້ຄຳນວນເປີເຊັນ ແລະ ປະເພດໂຮງຮຽນຄາດໝາຍໃໝ່ທັນທີ
+}
 
 function renderReport() {
   const p1 = calcPart1(), p2 = calcPart2(), p3 = calcPart3(), total = calcTotal(), cat = getCategory(total);
