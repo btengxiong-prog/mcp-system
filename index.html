@@ -2343,25 +2343,31 @@ function renderSummaryGroupTable(schools, allData, year) {
     html += `<th class="border border-gray-400 p-2 text-center min-w-[180px] bg-blue-100 text-blue-800">ລວມ ${schools.length} ໂຮງຮຽນ</th>`;
     html += '</tr></thead><tbody>';
 
-    const buildRowsForPart = (partNum, title, aspectsList) => {
-    // ແກ້ໄຂແຖວຫົວຂໍ້ພາກໃຫຍ່ (ເຊັ່ນ: ພາກທີ I, ພາກທີ II) ໃຫ້ຢຶດຕິດທາງຊ້າຍ
-    let rows = `<tr>
-        <td class="bg-blue-600 text-white font-bold p-3 text-base text-left sticky left-0 z-10 shadow-[2px_0_4px_rgba(0,0,0,0.05)]">${title}</td>
-        <td class="bg-blue-600 border border-gray-400" colspan="${schools.length + 1}"></td>
-    </tr>`;
-    let qIndex = 0; // ຕົວນັບ index ຂອງແຕ່ລະພາກ
-
-    aspectsList.forEach(aspect => {
-        // ແກ້ໄຂແຖວຫົວຂໍ້ດ້ານ (ເຊັ່ນ: 1. ໂຄງລ່າງ..., 2. ອຸປະກອນ...) ໃຫ້ຢຶດຕິດທາງຊ້າຍ
-        rows += `<tr class="bg-blue-50">
-            <td class="border border-gray-400 p-2 font-bold text-blue-800 sticky left-0 z-10 bg-blue-50 shadow-[2px_0_4px_rgba(0,0,0,0.05)]">${aspect.name}</td>
-            <td class="border border-gray-400 bg-blue-50" colspan="${schools.length + 1}"></td>
+const buildRowsForPart = (partNum, title, aspectsList) => {
+        // ແຖວຫົວຂໍ້ພາກໃຫຍ່ (ໃຊ້ <div> ຢຶດຕິດທາງຊ້າຍ ພາຍໃນ td ທີ່ colspan)
+        let rows = `<tr>
+            <td colspan="${schools.length + 2}" class="bg-blue-600 border border-blue-700 p-0">
+                <div class="sticky left-0 inline-block text-white font-bold p-3 text-base z-10">${title}</div>
+            </td>
         </tr>`;
-        aspect.indicators.forEach(ind => {
-            rows += `<tr><td class="border border-gray-400 p-2 sticky left-0 z-10 bg-white shadow-[2px_0_4px_rgba(0,0,0,0.05)]">${ind}</td>`;
-                
+        
+        let qIndex = 0; // ຕົວນັບ index ຂອງແຕ່ລະພາກ
+
+        aspectsList.forEach(aspect => {
+            // ແຖວຫົວຂໍ້ດ້ານ (ໃຊ້ <div> ຢຶດຕິດທາງຊ້າຍ ພາຍໃນ td ທີ່ colspan)
+            rows += `<tr class="bg-blue-50">
+                <td colspan="${schools.length + 2}" class="border border-gray-400 p-0">
+                    <div class="sticky left-0 inline-block p-2 font-bold text-blue-800 z-10">${aspect.name}</div>
+                </td>
+            </tr>`;
+            
+            aspect.indicators.forEach(ind => {
+                // ແຖວຕົວຊີ້ວັດ (ໃຫ້ td ທຳອິດຢຶດຊ້າຍຄືເກົ່າ)
+                rows += `<tr>
+                    <td class="border border-gray-400 p-2 sticky left-0 z-10 bg-white shadow-[2px_0_4px_rgba(0,0,0,0.05)]">${ind}</td>`;
+                    
                 let totalScore = 0;
-                let evalCount = 0; // ໂຮງຮຽນທີ່ປະເມີນຂໍ້ນີ້ແລ້ວ
+                let evalCount = 0;
 
                 schools.forEach(s => {
                     const sKey = s.code + '_' + year;
@@ -2378,9 +2384,8 @@ function renderSummaryGroupTable(schools, allData, year) {
                     rows += `<td class="border border-gray-400 p-2 text-center">${cellTxt}</td>`;
                 });
 
-                // ຖັນສຸດທ້າຍ: ຄຳນວນຄ່າສະເລ່ຍ ແລະ ທຽບເກນ
                 if (evalCount > 0) {
-                    const avg = totalScore / schools.length; // ຫານໂຮງຮຽນທັງໝົດໃນກຸ່ມຕາມຫຼັກການ
+                    const avg = totalScore / schools.length; 
                     let statusHtml = '';
                     if (avg >= 75) statusHtml = '<span class="font-bold text-green-600">✓ ຜ່ານເກນ</span>';
                     else if (avg >= 50) statusHtml = '<span class="font-bold text-yellow-600">~ ປັບປຸງໜ້ອຍ</span>';
