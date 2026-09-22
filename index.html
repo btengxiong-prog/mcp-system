@@ -2524,7 +2524,9 @@ function renderSummaryGroupTable(schools, allSchoolsData, allStudentData, year) 
     let html = '<table class="w-full border-collapse border-b border-gray-400 min-w-[800px] text-sm bg-white">';
     
     html += '<thead class="bg-gray-100 sticky top-0 z-20 shadow-md"><tr>';
-    html += '<th class="border border-gray-400 p-2 min-w-[300px] text-left sticky left-0 z-30 bg-gray-100 shadow-[2px_0_4px_rgba(0,0,0,0.05)]">ເນື້ອໃນ / ຕົວຊີ້ວັດ</th>';
+    // ແກ້ໄຂ: ບັງຄັບຄວາມກວ້າງ max-w-[320px] ແລະ ໃຫ້ຕັດແຖວ (whitespace-normal)
+    html += '<th class="border border-gray-400 p-3 w-[320px] min-w-[250px] max-w-[320px] whitespace-normal break-words text-left sticky left-0 z-30 bg-gray-100 shadow-[2px_0_4px_rgba(0,0,0,0.05)]">ເນື້ອໃນ / ຕົວຊີ້ວັດ</th>';
+    
     schools.forEach((s, i) => {
         html += `<th class="border border-gray-400 p-2 text-center min-w-[100px]">ໂຮງຮຽນທີ່ ${i+1}<br><span class="font-normal text-xs text-blue-700">${s.name}</span></th>`;
     });
@@ -2547,8 +2549,9 @@ function renderSummaryGroupTable(schools, allSchoolsData, allStudentData, year) 
             </tr>`;
             
             aspect.indicators.forEach(ind => {
+                // ແກ້ໄຂ: ບັງຄັບຄວາມກວ້າງ max-w-[320px] ແລະ ໃຫ້ຕັດແຖວພ້ອມຍະຫວ່າງແຖວທີ່ອ່ານງ່າຍ (leading-relaxed)
                 rows += `<tr>
-                    <td class="border border-gray-400 p-2 sticky left-0 z-10 bg-white shadow-[2px_0_4px_rgba(0,0,0,0.05)]">${ind}</td>`;
+                    <td class="border border-gray-400 p-3 sticky left-0 z-10 bg-white shadow-[2px_0_4px_rgba(0,0,0,0.05)] w-[320px] min-w-[250px] max-w-[320px] whitespace-normal break-words leading-relaxed">${ind}</td>`;
                     
                 let totalScore = 0;
                 let evalCount = 0;
@@ -2607,8 +2610,9 @@ function renderSummaryGroupTable(schools, allSchoolsData, allStudentData, year) 
             aspect.indicators.forEach((ind, iIndex) => {
                 const grade = grades[iIndex];
                 
+                // ແກ້ໄຂ: ບັງຄັບຄວາມກວ້າງ max-w-[320px] ແລະ ໃຫ້ຕັດແຖວ
                 rows += `<tr>
-                    <td class="border border-gray-400 p-2 sticky left-0 z-10 bg-white shadow-[2px_0_4px_rgba(0,0,0,0.05)]">${ind}</td>`;
+                    <td class="border border-gray-400 p-3 sticky left-0 z-10 bg-white shadow-[2px_0_4px_rgba(0,0,0,0.05)] w-[320px] min-w-[250px] max-w-[320px] whitespace-normal break-words leading-relaxed">${ind}</td>`;
                     
                 let totalPercentSum = 0;
                 let validSchools = 0;
