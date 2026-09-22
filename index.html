@@ -549,11 +549,11 @@
   <div class="bg-white rounded-xl shadow-2xl p-6 w-11/12 max-w-md transform scale-95 transition-transform duration-300" id="pasteExcelBox">
     <div class="mb-4">
       <h3 class="text-xl font-bold text-gray-900 mb-2" id="pasteExcelTitle">ຄັດລອກຂໍ້ມູນຈາກ Excel</h3>
-      <p class="text-sm text-gray-600 mb-2">ທ່ານສາມາດກັອບປີ້ຄະແນນເປັນແຖວລົງມາ (ຖັນດຽວ) ມາຈາກ Excel ແລ້ວວາງລົງນີ້ໄດ້ເລີຍ.</p>
+      <p class="text-sm text-gray-600 mb-2">ທ່ານສາມາດກັອບປີ້ຂໍ້ມູນ <b>2 ຖັນ (ລະຫັດໂຮງຮຽນ ແລະ ເກນ)</b> ມາຈາກ Excel ແລ້ວວາງລົງນີ້ໄດ້ເລີຍ.</p>
     <p class="text-xs text-blue-700 mb-3 bg-blue-50 p-2 rounded-lg font-semibold border border-blue-100">
         💡 ລະບົບຮອງຮັບຄ່າ: <br>• ຜ່ານເກນ (100%) = ພິມ <b>2</b><br>• ປັບປຸງໜ້ອຍ (50%) = ພິມ <b>1</b><br>• ປັບປຸງຫຼາຍ (0%) = ພິມ <b>0</b>
       </p>
-      <textarea id="pasteExcelData" rows="8" placeholder="ວາງຂໍ້ມູນຢູ່ທີ່ນີ້..." class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold resize-y"></textarea>
+      <textarea id="pasteExcelData" rows="8" placeholder="ຕົວຢ່າງ (ກັອບຈາກ Excel):&#10;10803001&#9;2&#10;10803001&#9;1&#10;ວາງຂໍ້ມູນຢູ່ທີ່ນີ້..." class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold resize-y"></textarea>
       <input type="hidden" id="pasteExcelPart">
     </div>
     <div class="flex justify-end gap-3 mt-4">
@@ -2215,10 +2215,7 @@ function showConfirm(message, callback, title = 'ຢືນຢັນການດ�
 
 // ຟັງຊັນເປີດໜ້າຕ່າງ Paste ຈາກ Excel ສຳລັບພາກ 1 ແລະ 2
 function openPasteModal(partNum) {
-  if (!state.school || !state.school.code) {
-    showToast('ກະລຸນາເລືອກໂຮງຮຽນຢູ່ໜ້າແດຊບອດກ່ອນ!', 'warning');
-    return;
-  }
+  // ເອົາການບັງຄັບເລືອກໂຮງຮຽນອອກ ເພາະເຮົາຈະອ່ານລະຫັດໂຮງຮຽນຈາກ Excel ໂດຍກົງ
   const modal = document.getElementById('pasteExcelModal');
   const box = document.getElementById('pasteExcelBox');
   document.getElementById('pasteExcelPart').value = partNum;
@@ -2241,42 +2238,88 @@ function confirmPasteExcel() {
   const partNum = document.getElementById('pasteExcelPart').value;
   const data = document.getElementById('pasteExcelData').value.trim();
   
+  // ດຶງສົກຮຽນປັດຈຸບັນ ເພື່ອໃຊ້ບັນທຶກລົງຖານຂໍ້ມູນ
+  const yearEl = document.getElementById('academicYear');
+  const currentYear = yearEl ? yearEl.value : (new Date().getFullYear() + '-' + (new Date().getFullYear() + 1));
+
   if (!data) {
     showToast('ກະລຸນາວາງຂໍ້ມູນກ່ອນ', 'warning');
     return;
   }
 
-  // ແຍກແຖວທີ່ວາງມາຈາກ Excel
   const lines = data.split(/\r?\n/).map(line => line.trim()).filter(line => line !== '');
-  const maxItems = partNum == 1 ? 25 : 20; // ພາກ 1 ມີ 25 ຂໍ້, ພາກ 2 ມີ 20 ຂໍ້
+  const maxItems = partNum == 1 ? 25 : 20; 
   
-  if (!state['part' + partNum]) state['part' + partNum] = {};
-  
-  let count = 0;
-  for (let i = 0; i < Math.min(lines.length, maxItems); i++) {
-    let val = lines[i].toLowerCase();
-    let status = '';
+  let parsedSchools = {}; // ໂຕເກັບຂໍ້ມູນແຍກຕາມລະຫັດໂຮງຮຽນ
+  let fallbackError = false;
+
+  lines.forEach(line => {
+    // ແຍກຂໍ້ມູນດ້ວຍ Tab (ຈາກ Excel) ຫຼື ຍະຫວ່າງ
+    const parts = line.split(/\t+|\s+/);
     
-// ກວດສອບເງື່ອນໄຂ (ຮອງຮັບຕົວເລກ 2, 1, 0 ແລະ ຂໍ້ຄວາມບາງສ່ວນ)
-        if (val === '2' || val.includes('ຜ່ານ')) {
-          status = 'pass';
-        } else if (val === '1' || val.includes('ໜ້ອຍ')) {
-          status = 'improve';
-        } else if (val === '0' || val.includes('ຫຼາຍ') || val.includes('ບໍ່ຜ່ານ')) {
-          status = 'fail';
-        }
+    let schoolCode = '';
+    let rawScore = '';
+
+    if (parts.length >= 2) {
+        schoolCode = parts[0].trim();
+        rawScore = parts[1].trim().toLowerCase();
+    } else if (parts.length === 1 && state.school && state.school.code) {
+        // ຖ້າວາງມາຖັນດຽວ ໃຫ້ໃຊ້ລະຫັດໂຮງຮຽນທີ່ເລືອກໄວ້ໃນ Dashboard (ເພື່ອຮອງຮັບໂຄດເກົ່າ)
+        schoolCode = state.school.code;
+        rawScore = parts[0].trim().toLowerCase();
+    } else {
+        fallbackError = true;
+        return;
+    }
+    
+    let status = '';
+    if (rawScore === '2' || rawScore.includes('ຜ່ານ')) status = 'pass';
+    else if (rawScore === '1' || rawScore.includes('ໜ້ອຍ')) status = 'improve';
+    else if (rawScore === '0' || rawScore.includes('ຫຼາຍ') || rawScore.includes('ບໍ່ຜ່ານ')) status = 'fail';
     
     if (status) {
-      state['part' + partNum][i] = status;
-      count++;
+      if (!parsedSchools[schoolCode]) parsedSchools[schoolCode] = {};
+      
+      const currentIndex = Object.keys(parsedSchools[schoolCode]).length;
+      if (currentIndex < maxItems) {
+          parsedSchools[schoolCode][currentIndex] = status; // ບັນທຶກສະຖານະຕາມລຳດັບຂໍ້
+      }
     }
+  });
+
+  const schoolCodes = Object.keys(parsedSchools);
+  if (schoolCodes.length === 0) {
+      showToast('ຮູບແບບຂໍ້ມູນບໍ່ຖືກຕ້ອງ ຫຼື ບໍ່ມີລະຫັດໂຮງຮຽນ', 'error');
+      return;
   }
-  
-  saveState();
-  renderPartForm(partNum, 'part' + partNum + 'Form'); // ໂຫຼດຟອມໃໝ່ເພື່ອໃຫ້ປຸ່ມວິທະຍຸຕິກອັດຕະໂນມັດ
-  calculateAll();
-  closePasteModal();
-  showToast(`ດຶງຂໍ້ມູນ ແລະ ບັນທຶກສຳເລັດ ${count} ລາຍການ`, 'success');
+
+  // ສົ່ງຂໍ້ມູນຂຶ້ນ Firebase ພ້ອມກັນຫຼາຍໂຮງຮຽນ
+  let promises = [];
+  let totalItemsSaved = 0;
+
+  schoolCodes.forEach(code => {
+      const schoolKey = code + '_' + currentYear;
+      const schoolData = parsedSchools[code];
+      totalItemsSaved += Object.keys(schoolData).length;
+
+      // ບັນທຶກທັບສະເພາະ ພາກ(part) ທີ່ເລືອກ ຈະບໍ່ກະທົບພາກອື່ນຂອງໂຮງຮຽນນັ້ນ
+      const ref = db.ref('schools/' + schoolKey + '/part' + partNum);
+      promises.push(ref.set(schoolData));
+
+      // ຖ້າລະຫັດໂຮງຮຽນທີ່ວາງ ກົງກັບໂຮງຮຽນທີ່ເປີດຢູ່ໜ້າຈໍ ໃຫ້ອັບເດດໜ້າຈໍພ້ອມ
+      if (state.school && state.school.code === code) {
+          state['part' + partNum] = schoolData;
+      }
+  });
+
+  Promise.all(promises).then(() => {
+      renderPartForm(partNum, 'part' + partNum + 'Form'); 
+      calculateAll();
+      closePasteModal();
+      showToast(`ບັນທຶກສຳເລັດ! ອັບເດດ ${schoolCodes.length} ໂຮງຮຽນ (ລວມ ${totalItemsSaved} ລາຍການ)`, 'success');
+  }).catch(err => {
+      alert("ເກີດຂໍ້ຜິດພາດໃນການບັນທຶກ Firebase: " + err.message);
+  });
 }
 
 function showToast(message, type = 'success') {
