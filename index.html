@@ -128,8 +128,8 @@
   <!-- CONTENT -->
   <main class="flex-1 p-6 overflow-y-auto h-full">
     <!-- ===== LOCATION MANAGEMENT ===== -->
-    <div id="page-location" class="page hidden flex flex-col h-[calc(100vh-3rem)]">
-      <div class="sticky top-0 z-25 bg-[#f1f5f9] pb-4 pt-1 flex-shrink-0">
+    <div id="page-location" class="page hidden">
+      <div class="sticky -top-6 z-25 bg-[#f1f5f9] pb-4 pt-6 mb-2">
         <div class="flex justify-between items-center mb-4 flex-wrap gap-2">
           <h1 class="text-2xl font-bold text-gray-800">ຈັດການຂໍ້ມູນໂຄງສ້າງ ເມືອງ, ກຸ່ມ ແລະ ໂຮງຮຽນ</h1>
           <div class="flex gap-2">
@@ -146,9 +146,9 @@
           </div>
         </div>
       </div>
-      <div class="card flex-1 overflow-auto">
-        <table>
-          <thead class="sticky top-0 bg-white z-10 shadow-sm">
+      <div class="card overflow-x-auto">
+        <table class="w-full">
+          <thead class="bg-gray-50 border-b shadow-sm">
             <tr>
               <th style="width: 40px; text-align: center;"><input type="checkbox" id="selectAllLoc" onclick="toggleAllLocations(this)" class="w-4 h-4 cursor-pointer accent-blue-600"></th>
               <th style="width: 100px;">ລະຫັດເມືອງ</th><th>ຊື່ເມືອງ</th><th style="width: 100px;">ລະຫັດກຸ່ມ</th><th>ຊື່ກຸ່ມ</th><th style="width: 100px;">ລະຫັດໂຮງຮຽນ</th><th>ຊື່ໂຮງຮຽນໃນກຸ່ມ</th><th style="width: 80px; text-align: center;">ຈັດການ</th>
