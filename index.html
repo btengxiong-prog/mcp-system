@@ -2040,10 +2040,10 @@ function renderLocationTable(filterText = '') {
     const thCheck = document.getElementById('thLocCheckbox');
     const thManage = document.getElementById('thLocManage');
 
-    if (btnDelete) btnDelete.style.display = isAdmin ? 'inline-block' : 'none'; // ສະເພາະ Admin
-    if (btnAdd) btnAdd.style.display = canEdit ? 'inline-block' : 'none'; // Admin ແລະ ເມືອງ ເຫັນໄດ້
-    if (thCheck) thCheck.style.display = isAdmin ? 'table-cell' : 'none'; // ສະເພາະ Admin
-    if (thManage) thManage.style.display = canEdit ? 'table-cell' : 'none'; // Admin ແລະ ເມືອງ ເຫັນໄດ້
+    if (btnDelete) btnDelete.style.display = isAdmin ? 'inline-block' : 'none';
+    if (btnAdd) btnAdd.style.display = canEdit ? 'inline-block' : 'none';
+    if (thCheck) thCheck.style.display = isAdmin ? 'table-cell' : 'none';
+    if (thManage) thManage.style.display = canEdit ? 'table-cell' : 'none';
 
     const data = getFlatLocationData();
     const accessibleData = getAccessibleLocationData();
@@ -2058,11 +2058,11 @@ function renderLocationTable(filterText = '') {
 
     const query = (filterText || document.getElementById('searchLocationInput')?.value || '').toLowerCase();
 
+    // ດຶງຂໍ້ມູນ ແລະ ກັ່ນຕອງ
     const filtered = data.map((item, originalIndex) => {
         return { ...item, originalIndex: originalIndex };
     }).filter(item => 
         (item.originalIndex === editingRowIndex || accessibleSchoolCodes.includes(item.school_code)) && // ບັງຄັບໃຫ້ເຫັນແຖວທີ່ກຳລັງແກ້ໄຂສະເໝີ
-        ((item.district_name || '').toLowerCase().includes(query) ||
         ((item.district_name || '').toLowerCase().includes(query) ||
         (item.group_name || '').toLowerCase().includes(query) ||
         (item.school_name || '').toLowerCase().includes(query) ||
