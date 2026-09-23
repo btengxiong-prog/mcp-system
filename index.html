@@ -489,6 +489,7 @@
                   <th class="p-3">ລະຫັດຜ່ານ</th>
                   <th class="p-3">ບົດບາດ</th>
                   <th class="p-3">ຂອບເຂດສິດ</th>
+                  <th class="p-3 text-center">ສະຖານະ</th>
                   <th class="p-3 text-center">ຈັດການ</th>
                </tr>
             </thead>
@@ -945,6 +946,12 @@ function login() {
             showToast('ລະຫັດຜ່ານບໍ່ຖືກຕ້ອງ', 'error');
             resetLoginBtn(btn); return;
         }
+        
+        // ກວດສອບສະຖານະການໃຊ້ງານ
+        if (userData.isActive === false) {
+            showToast('ບັນຊີນີ້ຖືກປິດການໃຊ້ງານໂດຍ Admin', 'error');
+            resetLoginBtn(btn); return;
+        }
 
         processLogin(userData);
     })
@@ -1018,11 +1025,17 @@ function loadUsersAdmin() {
             else if (u.role === 'group') scopeTxt = `ກຸ່ມ: ${u.scope.gCode}`;
             else if (u.role === 'school') scopeTxt = `ໂຮງຮຽນ: ${u.scope.sCode}`;
 
+            const isActive = u.isActive !== false; // ຖ້າບໍ່ມີຄ່າ (ຂອງເກົ່າ) ໃຫ້ຖືວ່າເປີດໃຊ້ງານ
+            const statusBadge = isActive 
+                ? `<button onclick="toggleUserStatus('${key}', true)" class="badge badge-green cursor-pointer hover:bg-green-300">ເປີດໃຊ້ງານ</button>`
+                : `<button onclick="toggleUserStatus('${key}', false)" class="badge badge-red cursor-pointer hover:bg-red-300">ປິດໃຊ້ງານ</button>`;
+
             html += `<tr class="border-b hover:bg-gray-50">
                 <td class="p-3 font-bold">${u.username}</td>
                 <td class="p-3 text-gray-500">${u.password}</td>
                 <td class="p-3"><span class="badge badge-yellow">${roleNames[u.role] || u.role}</span></td>
                 <td class="p-3 text-sm">${scopeTxt}</td>
+                <td class="p-3 text-center">${statusBadge}</td>
                 <td class="p-3 text-center">
                     <button onclick="deleteUser('${key}')" class="btn btn-danger text-xs">🗑️ ລຶບ</button>
                 </td>
@@ -1096,6 +1109,7 @@ function saveNewUser() {
         password: pass,
         role: role,
         scope: { dCode, gCode, sCode },
+        isActive: true, // ເພີ່ມສະຖານະເປີດໃຊ້ງານເປັນຄ່າເລີ່ມຕົ້ນ
         createdAt: new Date().toISOString()
     };
 
@@ -1117,6 +1131,14 @@ function deleteUser(key) {
     showConfirm('ທ່ານຕ້ອງການລຶບຜູ້ໃຊ້ນີ້ແທ້ບໍ?', () => {
         db.ref('users/' + key).remove().then(() => showToast('ລຶບຜູ້ໃຊ້ສຳເລັດ', 'success'));
     }, 'ຢືນຢັນການລຶບ');
+}
+
+function toggleUserStatus(key, currentStatus) {
+    db.ref('users/' + key).update({ isActive: !currentStatus }).then(() => {
+        showToast(`ປ່ຽນສະຖານະເປັນ ${!currentStatus ? 'ເປີດໃຊ້ງານ' : 'ປິດໃຊ້ງານ'} ສຳເລັດແລ້ວ`, 'success');
+    }).catch(err => {
+        showToast('ເກີດຂໍ້ຜິດພາດ: ' + err.message, 'error');
+    });
 }
 
 // ຟັງຊັນກັ່ນຕອງຂໍ້ມູນໂຄງສ້າງ ອີງຕາມສິດຂອງຢູເຊີ (ແກນຫຼັກຂອງລະບົບ)
