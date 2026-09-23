@@ -2029,17 +2029,20 @@ function renderLocationTable(filterText = '') {
     const tbody = document.getElementById('locationTableBody');
     if (!tbody) return;
 
-    // ----- ກວດສອບສິດ: ໃຫ້ເຫັນປຸ່ມລຶບ/ແກ້ໄຂ ໄດ້ສະເພາະ Admin ເທົ່ານັ້ນ -----
+    // ----- ກວດສອບສິດ -----
     const isAdmin = state.user && state.user.role === 'admin';
+    const isEditing = editingRowIndex !== -1; // ກວດເບິ່ງວ່າມີການກົດເພີ່ມ/ແກ້ໄຂແຖວໃດໜຶ່ງຢູ່ຫຼືບໍ່
+    const showActionCol = isAdmin || isEditing; // ຖັນຈັດການຈະສະແດງກໍຕໍ່ເມື່ອເປັນ Admin ຫຼື ກຳລັງເພີ່ມຂໍ້ມູນໃໝ່
+
     const thChk = document.getElementById('th-loc-chk');
     const thAction = document.getElementById('th-loc-action');
     const btnDelete = document.getElementById('btn-delete-loc');
-    const btnAdd = document.getElementById('btn-add-loc'); // ເຊື່ອງປຸ່ມເພີ່ມນຳຖ້າບໍ່ແມ່ນແອັດມິນ
+    const btnAdd = document.getElementById('btn-add-loc');
 
-    if (thChk) thChk.style.display = isAdmin ? '' : 'none';
-    if (thAction) thAction.style.display = isAdmin ? '' : 'none';
-    if (btnDelete) btnDelete.style.display = isAdmin ? '' : 'none';
-    if (btnAdd) btnAdd.style.display = isAdmin ? '' : 'none';
+    if (thChk) thChk.style.display = isAdmin ? '' : 'none'; // ເຊື່ອງຖັນຕິກ
+    if (btnDelete) btnDelete.style.display = isAdmin ? '' : 'none'; // ເຊື່ອງປຸ່ມລຶບ
+    if (thAction) thAction.style.display = showActionCol ? '' : 'none'; // ເຊື່ອງ/ສະແດງ ຖັນຈັດການ
+    if (btnAdd) btnAdd.style.display = ''; // ປຸ່ມເພີ່ມ ສະແດງໃຫ້ທຸກຄົນເຫັນໄດ້!
     // -------------------------------------------------------------
 
     const data = getFlatLocationData();
@@ -2058,7 +2061,7 @@ function renderLocationTable(filterText = '') {
     const filtered = data.map((item, originalIndex) => {
         return { ...item, originalIndex: originalIndex };
     }).filter(item => 
-        accessibleSchoolCodes.includes(item.school_code) && // ຕອງເອົາສະເພາະໂຮງຮຽນທີ່ມີສິດເຫັນເທົ່ານັ້ນ
+        accessibleSchoolCodes.includes(item.school_code) &&
         ((item.district_name || '').toLowerCase().includes(query) ||
         (item.group_name || '').toLowerCase().includes(query) ||
         (item.school_name || '').toLowerCase().includes(query) ||
@@ -2068,7 +2071,7 @@ function renderLocationTable(filterText = '') {
     );
 
     if (filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="${isAdmin ? 8 : 6}" class="text-center text-gray-400 py-4">ບໍ່ພົບຂໍ້ມູນທີ່ຄົ້ນຫາ</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="${showActionCol ? (isAdmin ? 8 : 7) : 6}" class="text-center text-gray-400 py-4">ບໍ່ພົບຂໍ້ມູນທີ່ຄົ້ນຫາ</td></tr>`;
         return;
     }
 
@@ -2097,7 +2100,7 @@ function renderLocationTable(filterText = '') {
                     <td class="p-2 border-b border-blue-200"><input type="text" list="groupList" id="edit_gname_${oIdx}" value="${item.group_name || ''}" class="w-full px-2 py-1 border border-blue-400 rounded" placeholder="ເລືອກ ຫຼື ພິມ..."></td>
                     <td class="p-2 border-b border-blue-200"><input type="text" id="edit_scode_${oIdx}" value="${item.school_code || ''}" class="w-full px-2 py-1 border border-blue-400 rounded"></td>
                     <td class="p-2 border-b border-blue-200"><input type="text" id="edit_sname_${oIdx}" value="${item.school_name || ''}" class="w-full px-2 py-1 border border-blue-400 rounded text-blue-700 font-bold"></td>
-                    ${isAdmin ? `<td style="text-align: center; white-space: nowrap;" class="p-2 border-b border-blue-200">
+                    ${showActionCol ? `<td style="text-align: center; white-space: nowrap;" class="p-2 border-b border-blue-200">
                         <button class="btn btn-success" style="padding: 4px 8px; font-size: 12px; margin-bottom: 4px;" onclick="saveLocationRow(${oIdx})" title="ບັນທຶກ">💾 ບັນທຶກ</button><br>
                         <button class="btn btn-danger" style="padding: 4px 8px; font-size: 12px;" onclick="cancelEditLocation()" title="ຍົກເລີກ">✕ ຍົກເລີກ</button>
                     </td>` : ''}
@@ -2115,8 +2118,8 @@ function renderLocationTable(filterText = '') {
                     <td class="px-3 py-2 border-b">${item.group_name || ''}</td>
                     <td class="px-3 py-2 border-b">${item.school_code || ''}</td>
                     <td class="px-3 py-2 border-b text-blue-700 font-bold">${item.school_name || ''}</td>
-                    ${isAdmin ? `<td style="text-align: center;" class="border-b">
-                        <button class="btn btn-primary shadow-sm" style="padding: 4px 10px; font-size: 12px;" onclick="startEditLocation(${oIdx})" title="ກົດເພື່ອແກ້ໄຂຂໍ້ມູນນີ້">✏️ ແກ້ໄຂ</button>
+                    ${showActionCol ? `<td style="text-align: center;" class="border-b">
+                        ${isAdmin ? `<button class="btn btn-primary shadow-sm" style="padding: 4px 10px; font-size: 12px;" onclick="startEditLocation(${oIdx})" title="ກົດເພື່ອແກ້ໄຂຂໍ້ມູນນີ້">✏️ ແກ້ໄຂ</button>` : ''}
                     </td>` : ''}
                 </tr>
             `;
