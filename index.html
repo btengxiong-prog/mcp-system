@@ -288,67 +288,72 @@
     </div>
 
     <!-- ===== PART 3 ===== -->
-    <div id="page-part3" class="page hidden">
-      <!-- 1. ສ່ວນຫົວທີ່ຢຶດຕິດ (ລວມເອົາ Title + ຫົວຕາຕະລາງ ມາຢຶດຕິດໄປພ້ອມກັນ) -->
-      <div class="sticky -top-6 z-30 bg-[#f1f5f9] pt-6 pb-0">
-        <div class="flex justify-between items-center flex-wrap gap-3 mb-3">
-          <div>
-            <h1 class="text-2xl font-bold text-gray-800">ປະເມີນ ພາກທີ III: ຜົນການຮຽນຂອງນັກຮຽນ (ປ.1 - ປ.5)</h1>
-            <p class="text-gray-500 text-sm mt-1">ບັນທຶກຜົນການປະເມີນລາຍບຸກຄົນ (1 = ຜ່ານ/ແກ້ໄດ້, 0 = ບໍ່ຜ່ານ/ແກ້ບໍ່ໄດ້) — ນ້ຳໜັກ 50%</p>
+    <!-- ===== PART 3 ===== -->
+      <div id="page-part3" class="page hidden">
+        <!-- 1. ສ່ວນຫົວທີ່ຢຶດຕິດ (ລວມເອົາ Title + ຫົວຕາຕະລາງ ມາຢຶດຕິດໄປພ້ອມກັນ) -->
+        <div class="sticky -top-6 z-30 bg-[#f1f5f9] pt-6 pb-0">
+          <div class="flex justify-between items-center flex-wrap gap-3 mb-3">
+            <div>
+              <h1 class="text-2xl font-bold text-gray-800">ປະເມີນ ພາກທີ III: ຜົນການຮຽນຂອງນັກຮຽນ (ປ.1 - ປ.5)</h1>
+              <p class="text-gray-500 text-sm mt-1">ບັນທຶກຜົນການປະເມີນລາຍບຸກຄົນ (1 = ຜ່ານ/ແກ້ໄດ້, 0 = ບໍ່ຜ່ານ/ແກ້ບໍ່ໄດ້) — ນ້ຳໜັກ 50%</p>
+            </div>
+            <div class="flex gap-2 items-center">
+              <button class="btn btn-danger" onclick="deleteSelectedPart3()">🗑️ ລຶບຂໍ້ມູນ</button>
+              <select id="part3GradeSelect" onchange="renderPart3Table()" class="px-3 py-2 border rounded-lg bg-white font-semibold">
+                <option value="ປ.1">ຂັ້ນ ປ.1</option><option value="ປ.2">ຂັ້ນ ປ.2</option><option value="ປ.3">ຂັ້ນ ປ.3</option><option value="ປ.4">ຂັ້ນ ປ.4</option><option value="ປ.5">ຂັ້ນ ປ.5</option>
+              </select>
+              <button class="btn btn-success" onclick="addStudentScoreRow()">＋ ເພີ່ມຊື່ນັກຮຽນ</button>
+            </div>
           </div>
-          <div class="flex gap-2 items-center">
-            <select id="part3GradeSelect" onchange="renderPart3Table()" class="px-3 py-2 border rounded-lg bg-white font-semibold">
-              <option value="ປ.1">ຂັ້ນ ປ.1</option><option value="ປ.2">ຂັ້ນ ປ.2</option><option value="ປ.3">ຂັ້ນ ປ.3</option><option value="ປ.4">ຂັ້ນ ປ.4</option><option value="ປ.5">ຂັ້ນ ປ.5</option>
-            </select>
-            <button class="btn btn-success" onclick="addStudentScoreRow()">＋ ເພີ່ມຊື່ນັກຮຽນ</button>
+          
+          <!-- ຕາຕະລາງສ່ວນຫົວ (Visual Header ຢຶດຕິດໄປພ້ອມກັບຫົວຂໍ້ດ້ານເທິງ) -->
+          <div class="bg-white rounded-t-xl shadow-sm border-b-2 border-gray-200 overflow-hidden">
+            <table class="w-full">
+              <colgroup>
+                <col style="width: 40px;"> <!-- Checkbox -->
+                <col style="width: 50px;"> <!-- ລ/ດ -->
+                <col>
+                <col style="width: 150px;">
+                <col style="width: 150px;">
+                <col style="width: 80px;">
+              </colgroup>
+              <thead>
+                <tr>
+                  <th style="text-align: center;" class="py-3"><input type="checkbox" id="selectAllPart3" onclick="toggleAllPart3(this)" class="w-4 h-4 cursor-pointer accent-blue-600"></th>
+                  <th style="text-align: center;" class="py-3">ລ/ດ</th>
+                  <th class="py-3 text-left">ຊື່ ແລະ ນາມສະກຸນ (ນັກຮຽນ)</th>
+                  <th style="text-align: center;" class="py-3">ພາສາລາວ (1 ຫຼື 0)</th>
+                  <th style="text-align: center;" class="py-3">ຄະນິດສາດ (1 ຫຼື 0)</th>
+                  <th style="text-align: center;" class="py-3">ຈັດການ</th>
+                </tr>
+              </thead>
+            </table>
           </div>
         </div>
-        
-        <!-- ຕາຕະລາງສ່ວນຫົວ (Visual Header ຢຶດຕິດໄປພ້ອມກັບຫົວຂໍ້ດ້ານເທິງ) -->
-        <div class="bg-white rounded-t-xl shadow-sm border-b-2 border-gray-200 overflow-hidden">
+
+        <!-- 2. ສ່ວນເນື້ອໃນຕາຕະລາງ (Table Body ປ່ອຍໃຫ້ເລື່ອນໄປຕາມໜ້າຈໍຫຼັກ) -->
+        <div class="bg-white rounded-b-xl shadow-sm mb-4 relative overflow-hidden">
           <table class="w-full">
             <colgroup>
-              <col style="width: 60px;">
+              <col style="width: 40px;">
+              <col style="width: 50px;">
               <col>
               <col style="width: 150px;">
               <col style="width: 150px;">
               <col style="width: 80px;">
             </colgroup>
-            <thead>
+            <tbody id="part3TableBody"></tbody>
+            <tfoot class="sticky bottom-0 bg-white shadow-[0_-3px_5px_rgba(0,0,0,0.06)] z-20 border-t-2 border-gray-300">
               <tr>
-                <th style="text-align: center;" class="py-3">ລ/ດ</th>
-                <th class="py-3 text-left">ຊື່ ແລະ ນາມສະກຸນ (ນັກຮຽນ)</th>
-                <th style="text-align: center;" class="py-3">ພາສາລາວ (1 ຫຼື 0)</th>
-                <th style="text-align: center;" class="py-3">ຄະນິດສາດ (1 ຫຼື 0)</th>
-                <th style="text-align: center;" class="py-3">ຈັດການ</th>
+                <td colspan="3" class="py-4 pr-6 font-bold text-red-600 text-lg" style="text-align: right;">ສ່ວນຮ້ອຍຂອງດ້ານ</td>
+                <td style="text-align: center;" class="font-bold text-red-600 text-xl" id="tableLaoPct">0.00%</td>
+                <td style="text-align: center;" class="font-bold text-red-600 text-xl" id="tableMathPct">0.00%</td>
+                <td></td>
               </tr>
-            </thead>
+            </tfoot>
           </table>
         </div>
       </div>
-
-      <!-- 2. ສ່ວນເນື້ອໃນຕາຕະລາງ (Table Body ປ່ອຍໃຫ້ເລື່ອນໄປຕາມໜ້າຈໍຫຼັກ) -->
-      <div class="bg-white rounded-b-xl shadow-sm mb-4 relative overflow-hidden">
-        <table class="w-full">
-          <colgroup>
-            <col style="width: 60px;">
-            <col>
-            <col style="width: 150px;">
-            <col style="width: 150px;">
-            <col style="width: 80px;">
-          </colgroup>
-          <tbody id="part3TableBody"></tbody>
-          <tfoot class="sticky bottom-0 bg-white shadow-[0_-3px_5px_rgba(0,0,0,0.06)] z-20 border-t-2 border-gray-300">
-            <tr>
-              <td colspan="2" class="py-4 pr-6 font-bold text-red-600 text-lg" style="text-align: right;">ສ່ວນຮ້ອຍຂອງດ້ານ</td>
-              <td style="text-align: center;" class="font-bold text-red-600 text-xl" id="tableLaoPct">0.00%</td>
-              <td style="text-align: center;" class="font-bold text-red-600 text-xl" id="tableMathPct">0.00%</td>
-              <td></td>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
-    </div>
 
     <!-- ===== SUMMARY PART 3 ===== -->
     <div id="page-summary_part3" class="page hidden">
@@ -1402,6 +1407,11 @@ function calcPart2() {
 function renderPart3Table() {
     const grade = document.getElementById('part3GradeSelect')?.value || 'ປ.1';
     const tbody = document.getElementById('part3TableBody');
+    const selectAllCheckbox = document.getElementById('selectAllPart3');
+    
+    // ຍົກເລີກການຕິກ Select All ທຸກຄັ້ງທີ່ Render ໃໝ່
+    if (selectAllCheckbox) selectAllCheckbox.checked = false;
+    
     if (!tbody) return;
 
     // ປ້ອງກັນບັນຫາ Firebase ແປງ Array ເປັນ Object ຕອນສະແດງຜົນ
@@ -1413,18 +1423,19 @@ function renderPart3Table() {
 
     const list = studentScores[grade];
     if (list.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-gray-500 font-semibold">ຍັງບໍ່ມີລາຍຊື່ນັກຮຽນໃນຊັ້ນນີ້ ກະລຸນາກົດ "+ ເພີ່ມຊື່ນັກຮຽນ"</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="py-6 text-center text-gray-500 font-semibold">ຍັງບໍ່ມີລາຍຊື່ນັກຮຽນໃນຊັ້ນນີ້ ກະລຸນາກົດ "+ ເພີ່ມຊື່ນັກຮຽນ"</td></tr>`;
         calculatePart3Summary(grade);
         return;
     }
     let html = '';
     list.forEach((st, index) => {
         html += `<tr>
+            <td style="text-align: center;"><input type="checkbox" class="part3-checkbox w-4 h-4 cursor-pointer accent-blue-600" value="${st.id}"></td>
             <td style="text-align: center;">${index + 1}</td>
-            <td class="name-cell"><input type="text" value="${st.name}" onchange="updateStudentScore('${grade}', '${st.id}', 'name', this.value)" style="border:none; background:transparent; width:100%; font-weight:bold; outline:none;"></td>
+            <td class="name-cell"><input type="text" id="stu_name_${st.id}" value="${st.name}" onchange="updateStudentScore('${grade}', '${st.id}', 'name', this.value)" style="border:none; background:transparent; width:100%; font-weight:bold; outline:none;"></td>
             <td style="text-align: center;"><input type="number" min="0" max="1" value="${st.lao}" class="score-input" onkeydown="handleScoreNavigation(event, this)" onchange="updateStudentScore('${grade}', '${st.id}', 'lao', this)" style="width: 60px; text-align: center; font-weight: bold;"></td>
             <td style="text-align: center;"><input type="number" min="0" max="1" value="${st.math}" class="score-input" onkeydown="handleScoreNavigation(event, this)" onchange="updateStudentScore('${grade}', '${st.id}', 'math', this)" style="width: 60px; text-align: center; font-weight: bold;"></td>
-            <td style="text-align: center;"><button class="btn btn-danger" style="padding: 4px 8px; font-size: 11px;" onclick="deleteStudentScore('${grade}', '${st.id}')">🗑️</button></td>
+            <td style="text-align: center;"><button class="btn btn-warning" style="padding: 4px 8px; font-size: 11px; color: white;" onclick="document.getElementById('stu_name_${st.id}').focus()">✏️ ແກ້ໄຂ</button></td>
         </tr>`;
     });
     tbody.innerHTML = html;
@@ -1611,6 +1622,37 @@ function updateStudentScore(grade, id, field, elementOrValue) {
 }
 
 function deleteStudentScore(grade, id) { studentScores[grade] = studentScores[grade].filter(x => x.id !== id); saveStudentScores(); renderPart3Table(); }
+
+// ====== ຟັງຊັນໃໝ່ສຳລັບການລຶບນັກຮຽນແບບລວມໝູ່ (Checkbox) ======
+function toggleAllPart3(source) {
+    const checkboxes = document.querySelectorAll('.part3-checkbox');
+    checkboxes.forEach(cb => { cb.checked = source.checked; });
+}
+
+function deleteSelectedPart3() {
+    const grade = document.getElementById('part3GradeSelect').value;
+    const checkboxes = document.querySelectorAll('.part3-checkbox:checked');
+    
+    if (checkboxes.length === 0) { 
+        showToast('ກະລຸນາຕິກເລືອກລາຍຊື່ນັກຮຽນທີ່ຕ້ອງການລຶບກ່ອນ', 'warning'); 
+        return; 
+    }
+    
+    showConfirm(`ທ່ານຕ້ອງການລຶບຂໍ້ມູນນັກຮຽນທີ່ເລືອກທັງໝົດ ${checkboxes.length} ຄົນແທ້ບໍ?`, () => {
+        // ດຶງເອົາ ID ທັງໝົດທີ່ຖືກຕິກ
+        const idsToDelete = Array.from(checkboxes).map(cb => cb.value);
+        
+        // ຕັດລາຍຊື່ນັກຮຽນທີ່ມີ ID ກົງກັບທີ່ຖືກເລືອກອອກ
+        studentScores[grade] = studentScores[grade].filter(x => !idsToDelete.includes(x.id));
+        
+        // ບັນທຶກ ແລະ ອັບເດດໜ້າຈໍ
+        saveStudentScores(); 
+        renderPart3Table();
+        
+        showToast(`ລຶບຂໍ້ມູນສຳເລັດ ${checkboxes.length} ຄົນ`, 'success');
+    }, 'ຢືນຢັນການລຶບຂໍ້ມູນ');
+}
+
 function calculatePart3Summary(grade) {
     const list = studentScores[grade] || [];
     if (list.length === 0) {
