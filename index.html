@@ -174,12 +174,12 @@
               <div class="text-xs text-gray-500 font-semibold mb-1">ໂຮງຮຽນທັງໝົດໃນລະບົບ</div>
               <div class="text-3xl font-bold text-gray-800" id="adminTotalSchools">0</div>
            </div>
-           <div class="bg-white p-3 rounded-lg shadow-sm text-center border border-red-100">
-              <div class="text-xs text-gray-500 font-semibold mb-1">ປ້ອນຂໍ້ມູນແລ້ວ</div>
+           <div onclick="showSchoolStatusModal('completed')" class="bg-white p-3 rounded-lg shadow-sm text-center border border-green-200 hover:bg-green-50 hover:border-green-400 cursor-pointer transition transform hover:-translate-y-0.5 active:translate-y-0" title="ກົດເພື່ອເບິ່ງລາຍຊື່ໂຮງຮຽນທີ່ປ້ອນແລ້ວ">
+              <div class="text-xs text-green-700 font-semibold mb-1 flex items-center justify-center gap-1">ປ້ອນຂໍ້ມູນແລ້ວ <span>🔍</span></div>
               <div class="text-3xl font-bold text-green-600" id="adminCompletedSchools">0</div>
            </div>
-           <div class="bg-white p-3 rounded-lg shadow-sm text-center border border-red-100">
-              <div class="text-xs text-gray-500 font-semibold mb-1">ຍັງບໍ່ທັນປ້ອນ</div>
+           <div onclick="showSchoolStatusModal('pending')" class="bg-white p-3 rounded-lg shadow-sm text-center border border-red-200 hover:bg-red-50 hover:border-red-400 cursor-pointer transition transform hover:-translate-y-0.5 active:translate-y-0" title="ກົດເພື່ອເບິ່ງລາຍຊື່ໂຮງຮຽນທີ່ຍັງບໍ່ທັນປ້ອນ">
+              <div class="text-xs text-red-700 font-semibold mb-1 flex items-center justify-center gap-1">ຍັງບໍ່ທັນປ້ອນ <span>🔍</span></div>
               <div class="text-3xl font-bold text-red-500" id="adminPendingSchools">0</div>
            </div>
            <div class="bg-white p-3 rounded-lg shadow-sm text-center border border-red-100">
@@ -590,6 +590,42 @@
     <div class="flex justify-end gap-3 mt-4">
       <button onclick="closePasteModal()" class="btn bg-gray-200 text-gray-800 hover:bg-gray-300 font-bold">ຍົກເລີກ</button>
       <button onclick="confirmPasteExcel()" class="btn btn-primary font-bold shadow-lg">ບັນທຶກຂໍ້ມູນ</button>
+    </div>
+  </div>
+</div>
+<!-- Modal ສະແດງລາຍຊື່ສະຖານະໂຮງຮຽນ (ADMIN) -->
+<div id="schoolStatusModal" class="fixed inset-0 z-[10000] hidden items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm transition-opacity">
+  <div class="bg-white rounded-xl shadow-2xl p-6 w-11/12 max-w-3xl transform scale-95 transition-transform duration-300 flex flex-col max-h-[85vh]" id="schoolStatusBox">
+    <div class="flex justify-between items-center mb-4 pb-2 border-b border-gray-200">
+      <div>
+        <h3 class="text-xl font-bold text-gray-800" id="statusModalTitle">ລາຍຊື່ໂຮງຮຽນ</h3>
+        <p class="text-xs text-gray-500 mt-0.5" id="statusModalSubtitle"></p>
+      </div>
+      <button onclick="closeSchoolStatusModal()" class="text-gray-400 hover:text-gray-600 text-2xl font-bold leading-none">&times;</button>
+    </div>
+    
+    <div class="mb-3">
+      <input type="text" id="statusModalSearch" placeholder="ຄົ້ນຫາຊື່ ຫຼື ລະຫັດໂຮງຮຽນ..." oninput="filterStatusModalList()" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+    </div>
+
+    <div class="flex-1 overflow-y-auto border border-gray-200 rounded-lg">
+      <table class="w-full border-collapse">
+        <thead class="bg-gray-50 sticky top-0 border-b border-gray-200 shadow-sm z-10">
+          <tr>
+            <th class="p-2.5 text-center text-xs w-12">ລ/ດ</th>
+            <th class="p-2.5 text-left text-xs w-28">ລະຫັດໂຮງຮຽນ</th>
+            <th class="p-2.5 text-left text-xs">ຊື່ໂຮງຮຽນ</th>
+            <th class="p-2.5 text-center text-xs w-36">ສະຖານະ / ລາຍລະອຽດ</th>
+            <th class="p-2.5 text-center text-xs w-20">ເລືອກເບິ່ງ</th>
+          </tr>
+        </thead>
+        <tbody id="schoolStatusTableBody"></tbody>
+      </table>
+    </div>
+
+    <div class="flex justify-between items-center mt-4 pt-3 border-t border-gray-200 text-xs text-gray-500 font-semibold">
+      <span id="statusModalCount">ທັງໝົດ: 0 ໂຮງຮຽນ</span>
+      <button onclick="closeSchoolStatusModal()" class="btn bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs py-1.5 px-4 rounded-lg font-bold">ປິດ</button>
     </div>
   </div>
 </div>
@@ -1741,6 +1777,9 @@ function getTargetSchoolsForDashboard(dCode, gCode) {
     return targets;
 }
 
+let adminCompletedList = [];
+let adminPendingList = [];
+
 function loadAdminSummary() {
     if (!state.user || state.user.role !== 'admin') {
         const box = document.getElementById('adminSummaryBox');
@@ -1764,47 +1803,170 @@ function loadAdminSummary() {
         document.getElementById('adminCompletedSchools').innerText = 0;
         document.getElementById('adminPendingSchools').innerText = 0;
         document.getElementById('adminCompletionRate').innerText = '0%';
+        adminCompletedList = [];
+        adminPendingList = [];
         return;
     }
 
     document.getElementById('adminCompletedSchools').innerHTML = '<span class="text-sm">ກຳລັງໂຫຼດ...</span>';
     document.getElementById('adminPendingSchools').innerHTML = '<span class="text-sm">ກຳລັງໂຫຼດ...</span>';
 
-    // ດຶງຂໍ້ມູນຈາກ Firebase ເພື່ອກວດສອບຈຳນວນໂຮງຮຽນທີ່ປ້ອນແລ້ວ
     db.ref('schools').once('value').then(snap => {
         const allData = snap.val() || {};
         
         db.ref('studentScores').once('value').then(stuSnap => {
              const stuData = stuSnap.val() || {};
-             let trueCompleted = 0;
+             adminCompletedList = [];
+             adminPendingList = [];
 
              targetSchools.forEach(s => {
                 const key = s.code + '_' + year;
                 const sData = allData[key];
                 const stData = stuData[key];
 
-                let hasData = false;
-                // 1. ກວດສອບວ່າມີການປ້ອນຂໍ້ມູນ ພາກ 1 ຫຼື ພາກ 2 ບໍ
-                if (sData && ((sData.part1 && Object.keys(sData.part1).length > 0) || (sData.part2 && Object.keys(sData.part2).length > 0))) {
-                    hasData = true;
-                }
-                // 2. ຖ້າຍັງບໍ່ປ້ອນພາກ 1,2 ມາກວດສອບວ່າມີການປ້ອນຄະແນນນັກຮຽນ (ພາກ 3) ບໍ
-                if (!hasData && stData) {
-                    for(let g in stData) {
+                let partsDone = [];
+                if (sData && sData.part1 && Object.keys(sData.part1).length > 0) partsDone.push('ພາກ 1');
+                if (sData && sData.part2 && Object.keys(sData.part2).length > 0) partsDone.push('ພາກ 2');
+                
+                let hasP3 = false;
+                if (stData) {
+                    for (let g in stData) {
                         if (stData[g] && Object.keys(stData[g]).length > 0) {
-                            hasData = true; break;
+                            hasP3 = true; break;
                         }
                     }
                 }
+                if (hasP3) partsDone.push('ພາກ 3');
 
-                if(hasData) trueCompleted++;
+                const schoolItem = {
+                    code: s.code,
+                    name: s.name,
+                    details: partsDone.length > 0 ? partsDone.join(', ') : 'ຍັງບໍ່ມີຂໍ້ມູນ'
+                };
+
+                if (partsDone.length > 0) {
+                    adminCompletedList.push(schoolItem);
+                } else {
+                    adminPendingList.push(schoolItem);
+                }
              });
 
-             document.getElementById('adminCompletedSchools').innerText = trueCompleted;
-             document.getElementById('adminPendingSchools').innerText = total - trueCompleted;
-             document.getElementById('adminCompletionRate').innerText = ((trueCompleted/total)*100).toFixed(1) + '%';
+             document.getElementById('adminCompletedSchools').innerText = adminCompletedList.length;
+             document.getElementById('adminPendingSchools').innerText = adminPendingList.length;
+             document.getElementById('adminCompletionRate').innerText = ((adminCompletedList.length / total) * 100).toFixed(1) + '%';
         });
     });
+}
+
+let currentModalType = '';
+
+function showSchoolStatusModal(type) {
+    currentModalType = type;
+    const modal = document.getElementById('schoolStatusModal');
+    const box = document.getElementById('schoolStatusBox');
+    const title = document.getElementById('statusModalTitle');
+    const subtitle = document.getElementById('statusModalSubtitle');
+    const searchInput = document.getElementById('statusModalSearch');
+
+    if (!modal) return;
+
+    if (type === 'completed') {
+        title.innerText = '✅ ລາຍຊື່ໂຮງຮຽນທີ່ "ປ້ອນຂໍ້ມູນແລ້ວ"';
+        title.className = 'text-xl font-bold text-green-700';
+        subtitle.innerText = 'ສະແດງລາຍຊື່ໂຮງຮຽນທີ່ມີການບັນທຶກຂໍ້ມູນແລ້ວ (ຢ່າງໜ້ອຍ 1 ພາກ)';
+    } else {
+        title.innerText = '⚠️ ລາຍຊື່ໂຮງຮຽນທີ່ "ຍັງບໍ່ທັນປ້ອນຂໍ້ມູນ"';
+        title.className = 'text-xl font-bold text-red-600';
+        subtitle.innerText = 'ສະແດງລາຍຊື່ໂຮງຮຽນທີ່ຍັງບໍ່ທັນມີຂໍ້ມູນໃດໆໃນລະບົບ';
+    }
+
+    if (searchInput) searchInput.value = '';
+    renderSchoolStatusTable();
+
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    setTimeout(() => {
+        box.classList.remove('scale-95');
+        box.classList.add('scale-100');
+    }, 10);
+}
+
+function closeSchoolStatusModal() {
+    const modal = document.getElementById('schoolStatusModal');
+    const box = document.getElementById('schoolStatusBox');
+    if (!modal) return;
+    box.classList.remove('scale-100');
+    box.classList.add('scale-95');
+    setTimeout(() => {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }, 200);
+}
+
+function filterStatusModalList() {
+    renderSchoolStatusTable();
+}
+
+function renderSchoolStatusTable() {
+    const tbody = document.getElementById('schoolStatusTableBody');
+    const countEl = document.getElementById('statusModalCount');
+    const query = (document.getElementById('statusModalSearch')?.value || '').toLowerCase().trim();
+    const list = currentModalType === 'completed' ? adminCompletedList : adminPendingList;
+
+    const filtered = list.filter(s => 
+        s.name.toLowerCase().includes(query) || s.code.toLowerCase().includes(query)
+    );
+
+    countEl.innerText = `ສະແດງ: ${filtered.length} / ${list.length} ໂຮງຮຽນ`;
+
+    if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-gray-400">ບໍ່ພົບຂໍ້ມູນໂຮງຮຽນ</td></tr>`;
+        return;
+    }
+
+    let html = '';
+    filtered.forEach((s, idx) => {
+        const badgeColor = currentModalType === 'completed' ? 'badge-green' : 'badge-red';
+        html += `<tr class="border-b hover:bg-gray-50 transition">
+            <td class="p-2 text-center text-xs text-gray-500">${idx + 1}</td>
+            <td class="p-2 text-xs font-mono text-gray-700">${s.code}</td>
+            <td class="p-2 font-semibold text-gray-800 text-sm">${s.name}</td>
+            <td class="p-2 text-center">
+                <span class="badge ${badgeColor} text-xs py-1 px-2.5">${s.details}</span>
+            </td>
+            <td class="p-2 text-center">
+                <button onclick="selectSchoolFromModal('${s.code}')" class="btn btn-primary text-xs py-1 px-2.5" title="ເລືອກໂຮງຮຽນນີ້ໄປສະແດງໃນແດຊບອດ">ເລືອກ</button>
+            </td>
+        </tr>`;
+    });
+    tbody.innerHTML = html;
+}
+
+function selectSchoolFromModal(schoolCode) {
+    closeSchoolStatusModal();
+    // ຊອກຫາວ່າໂຮງຮຽນນີ້ຢູ່ເມືອງໃດ ແລະ ກຸ່ມໃດ
+    let foundDist = "", foundGroup = "";
+    for (let d of LOCATION_DATA) {
+        for (let g of (d.groups || [])) {
+            for (let s of (g.schools || [])) {
+                if (s.school_code === schoolCode) {
+                    foundDist = d.district_code;
+                    foundGroup = g.group_code;
+                    break;
+                }
+            }
+        }
+    }
+
+    if (foundDist) {
+        const distSelect = document.getElementById('filterDistrict');
+        if (distSelect) { distSelect.value = foundDist; onDistrictChange(); }
+        const groupSelect = document.getElementById('filterGroup');
+        if (groupSelect) { groupSelect.value = foundGroup; onGroupChange(); }
+        const schoolSelect = document.getElementById('filterSchool');
+        if (schoolSelect) { schoolSelect.value = schoolCode; saveSchoolInfo(); }
+        showToast('ໂຫຼດຂໍ້ມູນໂຮງຮຽນຮຽບຮ້ອຍ!', 'success');
+    }
 }
 
 function renderDashboard() {
