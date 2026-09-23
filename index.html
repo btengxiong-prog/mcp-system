@@ -77,13 +77,27 @@
 </div>
 
 <!-- ============ MAIN APP ============ -->
-<div id="appScreen" class="hidden h-screen w-full flex overflow-hidden">
+<div id="appScreen" class="hidden h-screen w-full flex flex-col md:flex-row overflow-hidden relative">
+
+  <!-- ແຖບເມນູດ້ານເທິງ ສຳລັບມືຖື (Mobile Header) -->
+  <div class="md:hidden w-full h-14 bg-blue-800 text-white flex items-center justify-between px-4 z-30 shadow-md flex-shrink-0">
+    <div class="font-bold flex items-center gap-2"><span class="text-xl">🏫</span> <span>ລະບົບ ມຄພ</span></div>
+    <button onclick="toggleMobileMenu()" class="text-white focus:outline-none p-1 text-2xl font-bold">☰</button>
+  </div>
+
+  <!-- ສາກຫຼັງສີດຳ ເວລາເປີດເມນູໃນມືຖື -->
+  <div id="mobileOverlay" onclick="toggleMobileMenu()" class="md:hidden fixed inset-0 bg-black bg-opacity-50 z-40 hidden transition-opacity"></div>
+
   <!-- SIDEBAR -->
-  <aside class="w-64 bg-blue-800 text-white flex-shrink-0 h-full overflow-y-auto">
-    <div class="p-4 border-b border-blue-700">
-      <div class="text-2xl">🏫</div>
-      <div class="font-bold mt-1">ລະບົບ ມຄພ</div>
-      <div id="userInfo" class="text-xs text-blue-200 mt-1"></div>
+  <aside id="sidebar" class="fixed md:relative z-50 w-64 bg-blue-800 text-white flex-shrink-0 h-full overflow-y-auto transform -translate-x-full md:translate-x-0 transition-transform duration-300 left-0 top-0">
+    <div class="p-4 border-b border-blue-700 flex justify-between items-start">
+      <div>
+        <div class="text-2xl">🏫</div>
+        <div class="font-bold mt-1">ລະບົບ ມຄພ</div>
+        <div id="userInfo" class="text-xs text-blue-200 mt-1"></div>
+      </div>
+      <!-- ປຸ່ມປິດ Sidebar ໃນມືຖື -->
+      <button onclick="toggleMobileMenu()" class="md:hidden text-white text-3xl leading-none">&times;</button>
     </div>
     <nav class="mt-2">
       <div class="sidebar-item active px-4 py-3 cursor-pointer flex items-center gap-2" data-page="dashboard" onclick="navigate('dashboard')">
@@ -126,7 +140,7 @@
   </aside>
 
   <!-- CONTENT -->
-  <main class="flex-1 p-6 overflow-y-auto h-full">
+  <main class="flex-1 p-4 md:p-6 overflow-y-auto h-full w-full">
     <!-- ===== LOCATION MANAGEMENT ===== -->
     <div id="page-location" class="page hidden">
       <div class="sticky -top-6 z-25 bg-[#f1f5f9] pb-4 pt-6 mb-2">
@@ -1235,6 +1249,19 @@ function getAccessibleLocationData() {
     }
     return LOCATION_DATA;
 }
+
+function toggleMobileMenu() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('mobileOverlay');
+    if (sidebar.classList.contains('-translate-x-full')) {
+        sidebar.classList.remove('-translate-x-full');
+        overlay.classList.remove('hidden');
+    } else {
+        sidebar.classList.add('-translate-x-full');
+        overlay.classList.add('hidden');
+    }
+}
+
 function logout() {
   state.user = null;
   saveState();
@@ -1250,8 +1277,8 @@ function navigate(page) {
   document.querySelector(`.sidebar-item[data-page="${page}"]`)?.classList.add('active');
   
   if (page === 'users') {
-      onNewUserRoleChange(); // ໂຫຼດ dropdown
-      loadUsersAdmin(); // ດຶງຂໍ້ມູນຜູ້ໃຊ້ຈາກ Firebase
+      onNewUserRoleChange(); 
+      loadUsersAdmin(); 
   }
 
   if (page === 'dashboard') renderDashboard();
@@ -1260,6 +1287,14 @@ function navigate(page) {
   if (page === 'plan') renderPlan();
   if (page === 'report') renderReport();
   if (page === 'summary_group') initSummaryFilters();
+  
+  // ປິດ Sidebar ອັດຕະໂນມັດຫຼັງຈາກກົດເລືອກເມນູໃນມືຖື
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('mobileOverlay');
+  if (window.innerWidth < 768 && sidebar && !sidebar.classList.contains('-translate-x-full')) {
+      sidebar.classList.add('-translate-x-full');
+      if (overlay) overlay.classList.add('hidden');
+  }
 }
 
 function renderPartForm(partNum, containerId) {
