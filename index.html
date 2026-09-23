@@ -162,6 +162,33 @@
     <!-- ===== DASHBOARD ===== -->
     <div id="page-dashboard" class="page">
       <h1 class="text-2xl font-bold text-gray-800 mb-4">ແດຊບອດລວມ</h1>
+
+      <!-- ກ່ອງສະຫຼຸບ ສຳລັບ ADMIN -->
+      <div id="adminSummaryBox" class="hidden mb-4 p-4 rounded-xl border-t-4 border-red-500 bg-red-50 shadow-sm text-red-900 transition-all">
+        <div class="flex items-center gap-2 mb-3">
+           <span class="text-xl">📊</span>
+           <h2 class="font-bold text-lg">ສະຫຼຸບຄວາມຄືບໜ້າການປ້ອນຂໍ້ມູນ (ສະເພາະ ADMIN)</h2>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+           <div class="bg-white p-3 rounded-lg shadow-sm text-center border border-red-100">
+              <div class="text-xs text-gray-500 font-semibold mb-1">ໂຮງຮຽນທັງໝົດໃນລະບົບ</div>
+              <div class="text-3xl font-bold text-gray-800" id="adminTotalSchools">0</div>
+           </div>
+           <div class="bg-white p-3 rounded-lg shadow-sm text-center border border-red-100">
+              <div class="text-xs text-gray-500 font-semibold mb-1">ປ້ອນຂໍ້ມູນແລ້ວ</div>
+              <div class="text-3xl font-bold text-green-600" id="adminCompletedSchools">0</div>
+           </div>
+           <div class="bg-white p-3 rounded-lg shadow-sm text-center border border-red-100">
+              <div class="text-xs text-gray-500 font-semibold mb-1">ຍັງບໍ່ທັນປ້ອນ</div>
+              <div class="text-3xl font-bold text-red-500" id="adminPendingSchools">0</div>
+           </div>
+           <div class="bg-white p-3 rounded-lg shadow-sm text-center border border-red-100">
+              <div class="text-xs text-gray-500 font-semibold mb-1">ອັດຕາສຳເລັດ</div>
+              <div class="text-3xl font-bold text-blue-600" id="adminCompletionRate">0%</div>
+           </div>
+        </div>
+      </div>
+
       <div class="card p-4 mb-4">
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
           <div><label class="block text-sm font-semibold mb-1">ເມືອງ</label><select id="filterDistrict" onchange="onDistrictChange()" class="w-full px-3 py-2 border rounded-lg bg-white"><option value="">-- ເລືອກເມືອງ --</option></select></div>
@@ -175,7 +202,7 @@
           </div>
           <div>
             <label class="block text-sm font-semibold mb-1">ສົກຮຽນ</label>
-            <select id="academicYear" class="w-full px-3 py-2 border rounded-lg bg-white" onchange="saveSchoolInfo()">
+            <select id="academicYear" class="w-full px-3 py-2 border rounded-lg bg-white" onchange="saveSchoolInfo(); if(typeof loadAdminSummary === 'function') loadAdminSummary();">
               <!-- ສົກຮຽນຈະຖືກສ້າງຂຶ້ນອັດຕະໂນມັດດ້ວຍ JavaScript -->
             </select>
           </div>
@@ -1700,6 +1727,86 @@ function calculateAll() {
   } catch(e) {}
 }
 
+function getTargetSchoolsForDashboard(dCode, gCode) {
+    let targets = [];
+    LOCATION_DATA.forEach(d => {
+        if(dCode && dCode !== 'all_districts' && d.district_code !== dCode) return;
+        (d.groups || []).forEach(g => {
+            if(gCode && gCode !== 'all_groups' && g.group_code !== gCode) return;
+            (g.schools || []).forEach(s => {
+                targets.push({code: s.school_code, name: s.school_name});
+            });
+        });
+    });
+    return targets;
+}
+
+function loadAdminSummary() {
+    if (!state.user || state.user.role !== 'admin') {
+        const box = document.getElementById('adminSummaryBox');
+        if(box) box.classList.add('hidden');
+        return;
+    }
+
+    const box = document.getElementById('adminSummaryBox');
+    if(box) box.classList.remove('hidden');
+
+    const dCode = document.getElementById('filterDistrict').value;
+    const gCode = document.getElementById('filterGroup').value;
+    const year = document.getElementById('academicYear').value || (new Date().getFullYear() + '-' + (new Date().getFullYear() + 1));
+
+    const targetSchools = getTargetSchoolsForDashboard(dCode, gCode);
+    const total = targetSchools.length;
+
+    document.getElementById('adminTotalSchools').innerText = total;
+
+    if (total === 0) {
+        document.getElementById('adminCompletedSchools').innerText = 0;
+        document.getElementById('adminPendingSchools').innerText = 0;
+        document.getElementById('adminCompletionRate').innerText = '0%';
+        return;
+    }
+
+    document.getElementById('adminCompletedSchools').innerHTML = '<span class="text-sm">ກຳລັງໂຫຼດ...</span>';
+    document.getElementById('adminPendingSchools').innerHTML = '<span class="text-sm">ກຳລັງໂຫຼດ...</span>';
+
+    // ດຶງຂໍ້ມູນຈາກ Firebase ເພື່ອກວດສອບຈຳນວນໂຮງຮຽນທີ່ປ້ອນແລ້ວ
+    db.ref('schools').once('value').then(snap => {
+        const allData = snap.val() || {};
+        
+        db.ref('studentScores').once('value').then(stuSnap => {
+             const stuData = stuSnap.val() || {};
+             let trueCompleted = 0;
+
+             targetSchools.forEach(s => {
+                const key = s.code + '_' + year;
+                const sData = allData[key];
+                const stData = stuData[key];
+
+                let hasData = false;
+                // 1. ກວດສອບວ່າມີການປ້ອນຂໍ້ມູນ ພາກ 1 ຫຼື ພາກ 2 ບໍ
+                if (sData && ((sData.part1 && Object.keys(sData.part1).length > 0) || (sData.part2 && Object.keys(sData.part2).length > 0))) {
+                    hasData = true;
+                }
+                // 2. ຖ້າຍັງບໍ່ປ້ອນພາກ 1,2 ມາກວດສອບວ່າມີການປ້ອນຄະແນນນັກຮຽນ (ພາກ 3) ບໍ
+                if (!hasData && stData) {
+                    for(let g in stData) {
+                        if (stData[g] && Object.keys(stData[g]).length > 0) {
+                            hasData = true; break;
+                        }
+                    }
+                }
+
+                if(hasData) trueCompleted++;
+             });
+
+             document.getElementById('adminCompletedSchools').innerText = trueCompleted;
+             document.getElementById('adminPendingSchools').innerText = total - trueCompleted;
+             document.getElementById('adminCompletionRate').innerText = ((trueCompleted/total)*100).toFixed(1) + '%';
+        });
+    });
+}
+
 function renderDashboard() {
   const sn = document.getElementById('schoolName');
   if (sn) sn.value = state.school.name;
@@ -1746,6 +1853,7 @@ function renderDashboard() {
   }
 
   calculateAll();
+  if (typeof loadAdminSummary === 'function') loadAdminSummary();
 }
 
 function saveSchoolInfo() {
@@ -1962,6 +2070,8 @@ function onDistrictChange() {
         groupSelect.value = state.user.scope.gCode;
         onGroupChange();
     }
+    
+    if (typeof loadAdminSummary === 'function') loadAdminSummary();
 }
 
 function onGroupChange() {
@@ -2022,6 +2132,8 @@ function onGroupChange() {
         schoolSelect.value = state.user.scope.sCode;
         saveSchoolInfo(); // ໂຫຼດຂໍ້ມູນໂຮງຮຽນທັນທີ
     }
+    
+    if (typeof loadAdminSummary === 'function') loadAdminSummary();
 }
 
 function getFlatLocationData() {
