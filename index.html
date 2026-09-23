@@ -2061,7 +2061,8 @@ function renderLocationTable(filterText = '') {
     const filtered = data.map((item, originalIndex) => {
         return { ...item, originalIndex: originalIndex };
     }).filter(item => 
-        accessibleSchoolCodes.includes(item.school_code) && // ຕອງເອົາສະເພາະໂຮງຮຽນທີ່ມີສິດເຫັນເທົ່ານັ້ນ
+        (item.originalIndex === editingRowIndex || accessibleSchoolCodes.includes(item.school_code)) && // ບັງຄັບໃຫ້ເຫັນແຖວທີ່ກຳລັງແກ້ໄຂສະເໝີ
+        ((item.district_name || '').toLowerCase().includes(query) ||
         ((item.district_name || '').toLowerCase().includes(query) ||
         (item.group_name || '').toLowerCase().includes(query) ||
         (item.school_name || '').toLowerCase().includes(query) ||
@@ -2182,10 +2183,22 @@ function saveLocationDataToStorage() {
     localStorage.setItem('mcp_location_data', JSON.stringify(LOCATION_DATA));
 }
 function addLocationRow() {
+    // ກຳນົດຄ່າເລີ່ມຕົ້ນ ສຳລັບແຖວໃໝ່
+    let dCode = ""; let dName = "ເມືອງ ໃໝ່";
+    let gCode = ""; let gName = "ກຸ່ມ ໃໝ່";
+
+    // ຖ້າເປັນຢູເຊີຂັ້ນເມືອງ, ໃຫ້ເອົາລະຫັດເມືອງຂອງເຂົາເຈົ້າມາໃສ່ເລີຍອັດຕະໂນມັດ ເພື່ອບໍ່ໃຫ້ຖືກເຊື່ອງຈາກສິດ
+    if (state.user && state.user.role !== 'admin') {
+        dCode = state.user.scope.dCode || "";
+        const foundDist = LOCATION_DATA.find(d => d.district_code === dCode);
+        if (foundDist) dName = foundDist.district_name;
+    }
+
     LOCATION_DATA.push({
-        district_code: "", district_name: "ເມືອງ ໃໝ່",
-        groups: [{ group_code: "", group_name: "ກຸ່ມ ໃໝ່", schools: [{ school_code: "", school_name: "ໂຮງຮຽນ ໃໝ່" }] }]
+        district_code: dCode, district_name: dName,
+        groups: [{ group_code: gCode, group_name: gName, schools: [{ school_code: "", school_name: "ໂຮງຮຽນ ໃໝ່" }] }]
     });
+    
     saveLocationDataToStorage();
     const updatedList = getFlatLocationData();
     const newIndex = updatedList.length - 1;
@@ -2193,10 +2206,13 @@ function addLocationRow() {
     if (searchInput) searchInput.value = '';
     editingRowIndex = newIndex;
     renderLocationTable('');
+    
     setTimeout(() => {
-        const container = document.querySelector('#page-location .overflow-auto');
-        if (container) container.scrollTop = container.scrollHeight;
+        // ແກ້ໄຂການເລື່ອນໜ້າຈໍ ໃຫ້ເລື່ອນລົງໄປຫາແຖວລຸ່ມສຸດເພື່ອໃຫ້ເຫັນຫ້ອງປ້ອນຂໍ້ມູນ
+        const container = document.querySelector('#page-location .overflow-x-auto') || window;
+        if (container.scrollTo) container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
     }, 100);
+    
     showToast('ເພີ່ມແຖວໃໝ່ແລ້ວ! ກະລຸນາປ້ອນຂໍ້ມູນ', 'success');
 }
 
