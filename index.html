@@ -2029,19 +2029,21 @@ function renderLocationTable(filterText = '') {
     const tbody = document.getElementById('locationTableBody');
     if (!tbody) return;
 
-    // ກວດສອບສິດ: ໃຫ້ສະແດງປຸ່ມຈັດການຕ່າງໆ ສະເພາະ Admin ເທົ່ານັ້ນ
+    // ກຳນົດສິດ: Admin ເຮັດໄດ້ທຸກຢ່າງ, District (ເມືອງ) ສາມາດເພີ່ມ ແລະ ແກ້ໄຂໄດ້ ແຕ່ລຶບບໍ່ໄດ້
     const isAdmin = state.user && state.user.role === 'admin';
+    const isDistrict = state.user && state.user.role === 'district';
+    const canEdit = isAdmin || isDistrict;
 
-    // ຈັດການເຊື່ອງ/ສະແດງ ປຸ່ມ ແລະ ຫົວຕາຕະລາງ ຕາມສິດ (ປຸ່ມເພີ່ມ, ປຸ່ມລຶບ, ຕິກບັອກ, ແລະ ປຸ່ມແກ້ໄຂ)
+    // ຈັດການເຊື່ອງ/ສະແດງ ປຸ່ມ ແລະ ຫົວຕາຕະລາງ ຕາມສິດ
     const btnDelete = document.getElementById('btnDeleteLocations');
     const btnAdd = document.getElementById('btnAddLocation'); 
     const thCheck = document.getElementById('thLocCheckbox');
     const thManage = document.getElementById('thLocManage');
 
-    if (btnDelete) btnDelete.style.display = isAdmin ? 'inline-block' : 'none';
-    if (btnAdd) btnAdd.style.display = isAdmin ? 'inline-block' : 'none'; // ເຊື່ອງປຸ່ມເພີ່ມໃຫ້ພ້ອມສຳລັບຢູເຊີເມືອງ
-    if (thCheck) thCheck.style.display = isAdmin ? 'table-cell' : 'none';
-    if (thManage) thManage.style.display = isAdmin ? 'table-cell' : 'none';
+    if (btnDelete) btnDelete.style.display = isAdmin ? 'inline-block' : 'none'; // ສະເພາະ Admin
+    if (btnAdd) btnAdd.style.display = canEdit ? 'inline-block' : 'none'; // Admin ແລະ ເມືອງ ເຫັນໄດ້
+    if (thCheck) thCheck.style.display = isAdmin ? 'table-cell' : 'none'; // ສະເພາະ Admin
+    if (thManage) thManage.style.display = canEdit ? 'table-cell' : 'none'; // Admin ແລະ ເມືອງ ເຫັນໄດ້
 
     const data = getFlatLocationData();
     const accessibleData = getAccessibleLocationData();
@@ -2069,8 +2071,8 @@ function renderLocationTable(filterText = '') {
     );
 
     if (filtered.length === 0) {
-        // ປັບ colspan ໃຫ້ແທດເໝາະກັບຈຳນວນຖັນທີ່ສະແດງ (ຖ້າເປັນ admin 8 ຖັນ, ຢູເຊີທົ່ວໄປ 6 ຖັນ)
-        const colspan = isAdmin ? 8 : 6;
+        // ປັບ colspan ໃຫ້ແທດເໝາະກັບຈຳນວນຖັນທີ່ສະແດງ (Admin=8, ຢູເຊີເມືອງ=7, ທົ່ວໄປ=6)
+        const colspan = isAdmin ? 8 : (canEdit ? 7 : 6);
         tbody.innerHTML = `<tr><td colspan="${colspan}" class="text-center text-gray-400 py-4">ບໍ່ພົບຂໍ້ມູນທີ່ຄົ້ນຫາ</td></tr>`;
         return;
     }
@@ -2102,7 +2104,7 @@ function renderLocationTable(filterText = '') {
                     <td class="p-2 border-b border-blue-200"><input type="text" list="groupList" id="edit_gname_${oIdx}" value="${item.group_name || ''}" class="w-full px-2 py-1 border border-blue-400 rounded" placeholder="ເລືອກ ຫຼື ພິມ..."></td>
                     <td class="p-2 border-b border-blue-200"><input type="text" id="edit_scode_${oIdx}" value="${item.school_code || ''}" class="w-full px-2 py-1 border border-blue-400 rounded"></td>
                     <td class="p-2 border-b border-blue-200"><input type="text" id="edit_sname_${oIdx}" value="${item.school_name || ''}" class="w-full px-2 py-1 border border-blue-400 rounded text-blue-700 font-bold"></td>
-                    ${isAdmin ? `<td style="text-align: center; white-space: nowrap;" class="p-2 border-b border-blue-200">
+                    ${canEdit ? `<td style="text-align: center; white-space: nowrap;" class="p-2 border-b border-blue-200">
                         <button class="btn btn-success" style="padding: 4px 8px; font-size: 12px; margin-bottom: 4px;" onclick="saveLocationRow(${oIdx})" title="ບັນທຶກ">💾 ບັນທຶກ</button><br>
                         <button class="btn btn-danger" style="padding: 4px 8px; font-size: 12px;" onclick="cancelEditLocation()" title="ຍົກເລີກ">✕ ຍົກເລີກ</button>
                     </td>` : ''}
@@ -2120,7 +2122,7 @@ function renderLocationTable(filterText = '') {
                     <td class="px-3 py-2 border-b">${item.group_name || ''}</td>
                     <td class="px-3 py-2 border-b">${item.school_code || ''}</td>
                     <td class="px-3 py-2 border-b text-blue-700 font-bold">${item.school_name || ''}</td>
-                    ${isAdmin ? `<td style="text-align: center;" class="border-b">
+                    ${canEdit ? `<td style="text-align: center;" class="border-b">
                         <button class="btn btn-primary shadow-sm" style="padding: 4px 10px; font-size: 12px;" onclick="startEditLocation(${oIdx})" title="ກົດເພື່ອແກ້ໄຂຂໍ້ມູນນີ້">✏️ ແກ້ໄຂ</button>
                     </td>` : ''}
                 </tr>
