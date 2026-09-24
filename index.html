@@ -1534,11 +1534,12 @@ function confirmAddStudent() {
 
             // ກວດສອບຮູບແບບ 5 ຖັນ (ລະຫັດໂຮງຮຽນ, ຊື່, ລາວ, ເລກ, ຊັ້ນ)
             if (parts.length >= 5 && /^\d{5,12}$/.test(parts[0])) {
-                schoolCode = parts[0]; // ຖັນທີ 1 ແມ່ນລະຫັດໂຮງຮຽນ
-                stuName = parts[1];    // ຖັນທີ 2 ແມ່ນຊື່ນັກຮຽນ
+                schoolCode = parts[0]; 
+                stuName = parts[1];    
                 laoScore = parseInt(parts[2]);
                 mathScore = parseInt(parts[3]);
-                grade = parts[4];      // ຖັນທີ 5 ແມ່ນຊັ້ນຮຽນ
+                // 🔴 ຈຸດແກ້ໄຂບັນຫາ: ຕັດຄຳວ່າ "ຂັ້ນ" ອອກ ແລະ ຕັດຍະຫວ່າງຖິ້ມ ໃຫ້ເຫຼືອແຕ່ "ປ.1"
+                grade = parts[4].replace('ຂັ້ນ', '').trim(); 
             } 
             // ເຜື່ອໄວ້ກໍລະນີຜູ້ໃຊ້ຍັງຫຼົງກັອບປີ້ ລ/ດ ຕິດມາ (6 ຖັນ)
             else if (parts.length >= 6 && /^\d{5,12}$/.test(parts[1])) {
@@ -1546,10 +1547,10 @@ function confirmAddStudent() {
                 stuName = parts[2];
                 laoScore = parseInt(parts[3]);
                 mathScore = parseInt(parts[4]);
-                grade = parts[5];
+                // 🔴 ຈຸດແກ້ໄຂບັນຫາ: ຕັດຄຳວ່າ "ຂັ້ນ" ອອກ
+                grade = parts[5].replace('ຂັ້ນ', '').trim();
             } 
             else {
-                // ຮູບແບບເກົ່າ (ຊື່ລ້າໆ ຫຼື ຊື່ + ຄະແນນ)
                 stuName = parts[0];
                 if (parts.length > 1) laoScore = parseInt(parts[1]);
                 if (parts.length > 2) mathScore = parseInt(parts[2]);
@@ -1566,7 +1567,7 @@ function confirmAddStudent() {
             if (!parsedData[schoolCode][safeGradeKey]) parsedData[schoolCode][safeGradeKey] = [];
 
             parsedData[schoolCode][safeGradeKey].push({
-                id: Date.now().toString() + '_' + index,
+                id: 'stu_' + Date.now() + '_' + index,
                 name: stuName,
                 lao: laoScore,
                 math: mathScore
