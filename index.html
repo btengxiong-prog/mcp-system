@@ -1415,38 +1415,46 @@ function renderPart3Table() {
     if (!tbody) return;
 
     let rawData = studentScores[grade];
-
-    // ປ້ອງກັນບັນຫາ Firebase ສົ່ງຄ່າກັບມາເປັນ Object ຫຼື Array ທີ່ມີຄ່າຫວ່າງ (null) ເຊິ່ງເຮັດໃຫ້ຂໍ້ມູນບໍ່ສະແດງ
     let cleanList = [];
+
+    // ກວດສອບ ແລະ ຈັດລຽງຂໍ້ມູນໃໝ່ໃຫ້ສະອາດ
     if (rawData) {
         if (Array.isArray(rawData)) {
-            // ກັ່ນຕອງເອົາສະເພາະຂໍ້ມູນທີ່ມີຢູ່ຈິງ (ຕັດ null ອອກ)
-            cleanList = rawData.filter(item => item !== null && item !== undefined && item.id);
+            cleanList = rawData.filter(item => item !== null && item !== undefined);
         } else {
-            cleanList = Object.values(rawData).filter(item => item !== null && item !== undefined && item.id);
+            cleanList = Object.values(rawData).filter(item => item !== null && item !== undefined);
         }
     }
     
-    // ອັບເດດຄ່າທີ່ສະອາດແລ້ວກັບຄືນ
+    // ປ້ອງກັນກໍລະນີຂໍ້ມູນນັກຮຽນເກົ່າບໍ່ມີ id (ເພື່ອບໍ່ໃຫ້ລະບົບ Error ເວລາກົດແກ້ໄຂ ຫຼື ລຶບ)
+    cleanList.forEach((item, idx) => {
+        if (!item.id) {
+            item.id = 'legacy_' + Date.now() + '_' + idx;
+        }
+    });
+
     studentScores[grade] = cleanList;
 
+    // ຖ້າບໍ່ມີຂໍ້ມູນແທ້ໆ ໃຫ້ສະແດງຂໍ້ຄວາມແຈ້ງເຕືອນ
     if (cleanList.length === 0) {
         tbody.innerHTML = `<tr><td colspan="6" class="py-6 text-center text-gray-500 font-semibold">ຍັງບໍ່ມີລາຍຊື່ນັກຮຽນໃນຊັ້ນນີ້ ກະລຸນາກົດ "+ ເພີ່ມຊື່ນັກຮຽນ"</td></tr>`;
         calculatePart3Summary(grade);
         return;
     }
 
+    // ວາດຕາຕະລາງຖ້າມີຂໍ້ມູນ
     let html = '';
     cleanList.forEach((st, index) => {
         html += `<tr>
             <td style="text-align: center;"><input type="checkbox" class="part3-checkbox w-4 h-4 cursor-pointer accent-blue-600" value="${st.id}"></td>
             <td style="text-align: center;">${index + 1}</td>
             <td class="name-cell"><input type="text" id="stu_name_${st.id}" value="${st.name || ''}" onchange="updateStudentScore('${grade}', '${st.id}', 'name', this.value)" style="border:none; background:transparent; width:100%; font-weight:bold; outline:none;"></td>
-            <td style="text-align: center;"><input type="number" min="0" max="1" value="${st.lao || 0}" class="score-input" onkeydown="handleScoreNavigation(event, this)" onchange="updateStudentScore('${grade}', '${st.id}', 'lao', this)" style="width: 60px; text-align: center; font-weight: bold;"></td>
-            <td style="text-align: center;"><input type="number" min="0" max="1" value="${st.math || 0}" class="score-input" onkeydown="handleScoreNavigation(event, this)" onchange="updateStudentScore('${grade}', '${st.id}', 'math', this)" style="width: 60px; text-align: center; font-weight: bold;"></td>
+            <td style="text-align: center;"><input type="number" min="0" max="1" value="${st.lao !== undefined ? st.lao : 1}" class="score-input" onkeydown="handleScoreNavigation(event, this)" onchange="updateStudentScore('${grade}', '${st.id}', 'lao', this)" style="width: 60px; text-align: center; font-weight: bold;"></td>
+            <td style="text-align: center;"><input type="number" min="0" max="1" value="${st.math !== undefined ? st.math : 1}" class="score-input" onkeydown="handleScoreNavigation(event, this)" onchange="updateStudentScore('${grade}', '${st.id}', 'math', this)" style="width: 60px; text-align: center; font-weight: bold;"></td>
             <td style="text-align: center;"><button class="btn btn-warning" style="padding: 4px 8px; font-size: 11px; color: white;" onclick="document.getElementById('stu_name_${st.id}').focus()">✏️ ແກ້ໄຂ</button></td>
         </tr>`;
     });
+    
     tbody.innerHTML = html;
     calculatePart3Summary(grade);
 }
