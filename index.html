@@ -2327,10 +2327,8 @@ function onGroupChange() {
     const groupCode = document.getElementById('filterGroup').value;
     const schoolSelect = document.getElementById('filterSchool');
     
+    // ບັງຄັບໃຫ້ມີແຕ່ຕົວເລືອກ "-- ເລືອກໂຮງຮຽນ --" ເພື່ອໃຫ້ຜູ້ໃຊ້ເລືອກໂຮງຮຽນສະເພາະເຈາະຈົງສະເໝີ
     let schoolOpts = '<option value="">-- ເລືອກໂຮງຮຽນ --</option>';
-    if(!state.user || state.user.role !== 'school') {
-        schoolOpts += '<option value="all_schools">ລວມທຸກໂຮງຮຽນ</option>';
-    }
     schoolSelect.innerHTML = schoolOpts;
     
     if (!districtCode || !groupCode) return;
