@@ -1484,35 +1484,51 @@ function confirmAddStudent() {
         const currentSchoolCode = state.school && state.school.code ? state.school.code : null;
 
         lines.forEach((line, index) => {
-            const parts = line.split('\t').map(p => p.trim());
-
             let schoolCode = currentSchoolCode;
             let stuName = '';
             let laoScore = 1;
             let mathScore = 1;
             let grade = currentGrade;
 
-            // ກວດສອບຮູບແບບ 5 ຖັນ (ລະຫັດໂຮງຮຽນ, ຊື່, ລາວ, ເລກ, ຊັ້ນ)
-            if (parts.length >= 5 && /^\d{5,12}$/.test(parts[0])) {
-                schoolCode = parts[0]; // ຖັນທີ 1 ແມ່ນລະຫັດໂຮງຮຽນ
-                stuName = parts[1];    // ຖັນທີ 2 ແມ່ນຊື່ນັກຮຽນ
-                laoScore = parseInt(parts[2]);
-                mathScore = parseInt(parts[3]);
-                grade = parts[4];      // ຖັນທີ 5 ແມ່ນຊັ້ນຮຽນ
-            } 
-            // ເຜື່ອໄວ້ກໍລະນີຜູ້ໃຊ້ຍັງຫຼົງກັອບປີ້ ລ/ດ ຕິດມາ (6 ຖັນ)
-            else if (parts.length >= 6 && /^\d{5,12}$/.test(parts[1])) {
-                schoolCode = parts[1];
-                stuName = parts[2];
-                laoScore = parseInt(parts[3]);
-                mathScore = parseInt(parts[4]);
-                grade = parts[5];
-            } 
-            else {
-                // ຮູບແບບເກົ່າ (ຊື່ລ້າໆ ຫຼື ຊື່ + ຄະແນນ)
-                stuName = parts[0];
-                if (parts.length > 1) laoScore = parseInt(parts[1]);
-                if (parts.length > 2) mathScore = parseInt(parts[2]);
+            // ໃຊ້ Regex ເພື່ອແຍກຂໍ້ມູນທີ່ອາດຈະຍະຫວ່າງດ້ວຍ Space ຫຼື Tab (ແກ້ໄຂບັນຫາການວາງຈາກບາງໂປຣແກຣມ)
+            // ຮອງຮັບ: [ລະຫັດໂຮງຮຽນ] [ຊື່] [ຄະແນນລາວ] [ຄະແນນເລກ] [ຊັ້ນຮຽນ] (ມີ ຫຼື ບໍ່ມີ ລຳດັບທາງໜ້າກໍໄດ້)
+            const regex = /^(?:\d+\s+)?(\d{5,12})\s+(.+?)\s+(\d)\s+(\d)\s+.*?(ປ\.\d)/;
+            const match = line.match(regex);
+
+            if (match) {
+                schoolCode = match[1];
+                stuName = match[2].trim();
+                laoScore = parseInt(match[3]);
+                mathScore = parseInt(match[4]);
+                grade = match[5];
+            } else {
+                // ຖ້າບໍ່ກົງກັບ Regex ໃຫ້ກັບມາໃຊ້ການແຍກດ້ວຍ Tab ແບບມາດຕະຖານ
+                const parts = line.split('\t').map(p => p.trim());
+                if (parts.length >= 5 && /^\d{5,12}$/.test(parts[0])) {
+                    schoolCode = parts[0];
+                    stuName = parts[1];
+                    laoScore = parseInt(parts[2]);
+                    mathScore = parseInt(parts[3]);
+                    grade = parts[4];
+                } else if (parts.length >= 6 && /^\d{5,12}$/.test(parts[1])) {
+                    schoolCode = parts[1];
+                    stuName = parts[2];
+                    laoScore = parseInt(parts[3]);
+                    mathScore = parseInt(parts[4]);
+                    grade = parts[5];
+                } else {
+                    stuName = parts[0] || line.trim();
+                    if (parts.length > 1) laoScore = parseInt(parts[1]);
+                    if (parts.length > 2) mathScore = parseInt(parts[2]);
+                }
+            }
+
+            // ສຳຄັນ: ແປງຄຳວ່າ "ຊັ້ນ ປ.5" ຫຼື ອື່ນໆ ໃຫ້ເຫຼືອພຽງແຕ່ "ປ.5" ເພື່ອໃຫ້ກົງກັບລະບົບ
+            if (grade) {
+                let gMatch = grade.match(/ປ\.\d/);
+                if (gMatch) {
+                    grade = gMatch[0];
+                }
             }
 
             if (!schoolCode) return; 
@@ -1520,7 +1536,7 @@ function confirmAddStudent() {
             laoScore = (isNaN(laoScore) || laoScore > 1) ? 1 : (laoScore < 0 ? 0 : laoScore);
             mathScore = (isNaN(mathScore) || mathScore > 1) ? 1 : (mathScore < 0 ? 0 : mathScore);
 
-            const safeGradeKey = grade.replace('.', '_'); 
+            const safeGradeKey = grade.replace('.', '_');
 
             if (!parsedData[schoolCode]) parsedData[schoolCode] = {};
             if (!parsedData[schoolCode][safeGradeKey]) parsedData[schoolCode][safeGradeKey] = [];
