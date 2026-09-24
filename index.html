@@ -1405,15 +1405,15 @@ function calcPart2() {
 }
 
 function renderPart3Table() {
-    const grade = document.getElementById('part3GradeSelect')?.value || 'ປ.1';
+    const select = document.getElementById('part3GradeSelect');
+    const grade = select ? select.value : 'ປ.1';
     const tbody = document.getElementById('part3TableBody');
     const selectAllCheckbox = document.getElementById('selectAllPart3');
-    
-    // ຍົກເລີກການຕິກ Select All ທຸກຄັ້ງທີ່ Render ໃໝ່
+
     if (selectAllCheckbox) selectAllCheckbox.checked = false;
     if (!tbody) return;
 
-    // ກວດສອບຄວາມປອດໄພຂອງ Object ຫຼັກກ່ອນ
+    // ກວດສອບຄວາມປອດໄພຂອງຕົວປ່ຽນ
     if (typeof studentScores === 'undefined' || !studentScores) {
         window.studentScores = {};
     }
@@ -1421,50 +1421,52 @@ function renderPart3Table() {
     let rawData = studentScores[grade];
     let cleanList = [];
 
-    // ຈັດລຽງ ແລະ ກັ່ນຕອງຂໍ້ມູນທີ່ອາດຈະເພພັງ (ເຊັ່ນ: null, undefined)
+    // ຈັດລຽງ ແລະ ກັ່ນຕອງຂໍ້ມູນປ້ອງກັນ Error
     if (rawData) {
-        let items = Array.isArray(rawData) ? rawData : Object.values(rawData);
-        cleanList = items.filter(item => item && typeof item === 'object');
+        if (Array.isArray(rawData)) {
+            cleanList = rawData.filter(item => item !== null && item !== undefined && typeof item === 'object');
+        } else {
+            cleanList = Object.values(rawData).filter(item => item !== null && item !== undefined && typeof item === 'object');
+        }
     }
-    
-    // ສ້າງ ID ໃໝ່ໃຫ້ຄົນທີ່ບໍ່ມີ ເພື່ອປ້ອງກັນ Error ເວລາແກ້ໄຂ
+
     cleanList.forEach((item, idx) => {
-        if (!item.id) item.id = 'legacy_' + Date.now() + '_' + idx;
-        if (item.lao === undefined) item.lao = 1;
-        if (item.math === undefined) item.math = 1;
+        if (!item.id) item.id = 'stu_' + Date.now() + '_' + idx;
+        if (item.lao === undefined || item.lao === null) item.lao = 1;
+        if (item.math === undefined || item.math === null) item.math = 1;
+        if (!item.name) item.name = '';
     });
 
     studentScores[grade] = cleanList;
 
-    // 🔴 ຖ້າບໍ່ມີຂໍ້ມູນແທ້ໆ ໃຫ້ສະແດງຂໍ້ຄວາມພ້ອມບອກ "ຊື່ໂຮງຮຽນ" ແລະ "ສົກຮຽນ" ທີ່ກຳລັງເບິ່ງຢູ່
+    // 🔴 ກໍລະນີບໍ່ມີຂໍ້ມູນ ໃຫ້ສະແດງແຈ້ງເຕືອນແບບໃໝ່ ເພື່ອໃຫ້ຮູ້ວ່າເບິ່ງໂຮງຮຽນຜິດຫຼືບໍ່
     if (cleanList.length === 0) {
         const sName = (state && state.school && state.school.name) ? state.school.name : 'ຍັງບໍ່ໄດ້ເລືອກໂຮງຮຽນ';
-        const sYear = (state && state.school && state.school.year) ? state.school.year : '';
-        
         tbody.innerHTML = `<tr>
-            <td colspan="6" class="py-10 text-center text-gray-500 font-semibold bg-gray-50">
-                <div class="text-lg mb-2">ຍັງບໍ່ມີຂໍ້ມູນນັກຮຽນ ຂັ້ນ ${grade}</div>
-                <div class="text-sm text-blue-600 font-bold mb-3">📌 ກຳລັງສະແດງຂອງ: ${sName} (ສົກຮຽນ ${sYear})</div>
-                ກະລຸນາກົດປຸ່ມ <span class="bg-green-600 text-white px-2 py-1 rounded text-xs">+ ເພີ່ມຊື່ນັກຮຽນ</span> ຢູ່ດ້ານເທິງ
+            <td colspan="6" class="py-10 text-center bg-gray-50 border-b border-gray-200">
+                <div class="text-4xl mb-3">📭</div>
+                <div class="text-lg font-bold text-gray-700 mb-1">ຍັງບໍ່ມີລາຍຊື່ນັກຮຽນ ຂັ້ນ ${grade}</div>
+                <div class="text-sm text-blue-600 font-bold mb-3">📌 ກຳລັງສະແດງຜົນຂອງ: ${sName}</div>
+                <p class="text-sm text-gray-500">ກົດປຸ່ມ <b class="text-green-600">+ ເພີ່ມຊື່ນັກຮຽນ</b> ເພື່ອເພີ່ມຂໍ້ມູນເຂົ້າໃນລະບົບ</p>
             </td>
         </tr>`;
         calculatePart3Summary(grade);
         return;
     }
 
-    // 🟢 ວາດຕາຕະລາງຖ້າມີຂໍ້ມູນ
+    // 🟢 ວາດຕາຕະລາງເມື່ອມີຂໍ້ມູນ
     let html = '';
     cleanList.forEach((st, index) => {
-        html += `<tr>
-            <td style="text-align: center;"><input type="checkbox" class="part3-checkbox w-4 h-4 cursor-pointer accent-blue-600" value="${st.id}"></td>
-            <td style="text-align: center;">${index + 1}</td>
-            <td class="name-cell"><input type="text" id="stu_name_${st.id}" value="${st.name || ''}" onchange="updateStudentScore('${grade}', '${st.id}', 'name', this.value)" style="border:none; background:transparent; width:100%; font-weight:bold; outline:none;"></td>
-            <td style="text-align: center;"><input type="number" min="0" max="1" value="${st.lao}" class="score-input" onkeydown="handleScoreNavigation(event, this)" onchange="updateStudentScore('${grade}', '${st.id}', 'lao', this)" style="width: 60px; text-align: center; font-weight: bold;"></td>
-            <td style="text-align: center;"><input type="number" min="0" max="1" value="${st.math}" class="score-input" onkeydown="handleScoreNavigation(event, this)" onchange="updateStudentScore('${grade}', '${st.id}', 'math', this)" style="width: 60px; text-align: center; font-weight: bold;"></td>
-            <td style="text-align: center;"><button class="btn btn-warning" style="padding: 4px 8px; font-size: 11px; color: white;" onclick="document.getElementById('stu_name_${st.id}').focus()">✏️ ແກ້ໄຂ</button></td>
+        html += `<tr class="hover:bg-gray-50 transition border-b border-gray-100">
+            <td style="text-align: center; vertical-align: middle;"><input type="checkbox" class="part3-checkbox w-4 h-4 cursor-pointer accent-blue-600" value="${st.id}"></td>
+            <td style="text-align: center; vertical-align: middle; font-weight: bold; color: #4b5563;">${index + 1}</td>
+            <td class="name-cell"><input type="text" id="stu_name_${st.id}" value="${st.name}" onchange="updateStudentScore('${grade}', '${st.id}', 'name', this.value)" style="border:none; background:transparent; width:100%; font-weight:bold; outline:none; padding: 8px;"></td>
+            <td style="text-align: center; vertical-align: middle;"><input type="number" min="0" max="1" value="${st.lao}" class="score-input border rounded px-2 py-1 bg-white focus:ring-2 focus:ring-blue-400" onkeydown="handleScoreNavigation(event, this)" onchange="updateStudentScore('${grade}', '${st.id}', 'lao', this)" style="width: 60px; text-align: center; font-weight: bold;"></td>
+            <td style="text-align: center; vertical-align: middle;"><input type="number" min="0" max="1" value="${st.math}" class="score-input border rounded px-2 py-1 bg-white focus:ring-2 focus:ring-blue-400" onkeydown="handleScoreNavigation(event, this)" onchange="updateStudentScore('${grade}', '${st.id}', 'math', this)" style="width: 60px; text-align: center; font-weight: bold;"></td>
+            <td style="text-align: center; vertical-align: middle;"><button class="btn btn-warning shadow-sm" style="padding: 4px 10px; font-size: 11px; color: white; font-weight: bold;" onclick="document.getElementById('stu_name_${st.id}').focus()">✏️ ແກ້ໄຂ</button></td>
         </tr>`;
     });
-    
+
     tbody.innerHTML = html;
     calculatePart3Summary(grade);
 }
