@@ -300,6 +300,7 @@
             <select id="part3GradeSelect" onchange="renderPart3Table()" class="px-3 py-2 border rounded-lg bg-white font-semibold">
               <option value="ປ.1">ຂັ້ນ ປ.1</option><option value="ປ.2">ຂັ້ນ ປ.2</option><option value="ປ.3">ຂັ້ນ ປ.3</option><option value="ປ.4">ຂັ້ນ ປ.4</option><option value="ປ.5">ຂັ້ນ ປ.5</option>
             </select>
+            <button class="btn btn-danger" onclick="deleteSelectedStudents()">🗑️ ລຶບຂໍ້ມູນ</button>
             <button class="btn btn-success" onclick="addStudentScoreRow()">＋ ເພີ່ມຊື່ນັກຮຽນ</button>
           </div>
         </div>
@@ -308,7 +309,8 @@
         <div class="bg-white rounded-t-xl shadow-sm border-b-2 border-gray-200 overflow-hidden">
           <table class="w-full">
             <colgroup>
-              <col style="width: 60px;">
+              <col style="width: 40px;">
+              <col style="width: 50px;">
               <col>
               <col style="width: 150px;">
               <col style="width: 150px;">
@@ -316,6 +318,7 @@
             </colgroup>
             <thead>
               <tr>
+                <th style="text-align: center;" class="py-3"><input type="checkbox" id="selectAllStudents" onclick="toggleAllStudents(this)" class="w-4 h-4 cursor-pointer accent-blue-600"></th>
                 <th style="text-align: center;" class="py-3">ລ/ດ</th>
                 <th class="py-3 text-left">ຊື່ ແລະ ນາມສະກຸນ (ນັກຮຽນ)</th>
                 <th style="text-align: center;" class="py-3">ພາສາລາວ (1 ຫຼື 0)</th>
@@ -331,7 +334,8 @@
       <div class="bg-white rounded-b-xl shadow-sm mb-4 relative overflow-hidden">
         <table class="w-full">
           <colgroup>
-            <col style="width: 60px;">
+            <col style="width: 40px;">
+            <col style="width: 50px;">
             <col>
             <col style="width: 150px;">
             <col style="width: 150px;">
@@ -340,7 +344,7 @@
           <tbody id="part3TableBody"></tbody>
           <tfoot class="sticky bottom-0 bg-white shadow-[0_-3px_5px_rgba(0,0,0,0.06)] z-20 border-t-2 border-gray-300">
             <tr>
-              <td colspan="2" class="py-4 pr-6 font-bold text-red-600 text-lg" style="text-align: right;">ສ່ວນຮ້ອຍຂອງດ້ານ</td>
+              <td colspan="3" class="py-4 pr-6 font-bold text-red-600 text-lg" style="text-align: right;">ສ່ວນຮ້ອຍຂອງດ້ານ</td>
               <td style="text-align: center;" class="font-bold text-red-600 text-xl" id="tableLaoPct">0.00%</td>
               <td style="text-align: center;" class="font-bold text-red-600 text-xl" id="tableMathPct">0.00%</td>
               <td></td>
@@ -1413,18 +1417,19 @@ function renderPart3Table() {
 
     const list = studentScores[grade];
     if (list.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-gray-500 font-semibold">ຍັງບໍ່ມີລາຍຊື່ນັກຮຽນໃນຊັ້ນນີ້ ກະລຸນາກົດ "+ ເພີ່ມຊື່ນັກຮຽນ"</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="py-6 text-center text-gray-500 font-semibold">ຍັງບໍ່ມີລາຍຊື່ນັກຮຽນໃນຊັ້ນນີ້ ກະລຸນາກົດ "+ ເພີ່ມຊື່ນັກຮຽນ"</td></tr>`;
         calculatePart3Summary(grade);
         return;
     }
     let html = '';
     list.forEach((st, index) => {
         html += `<tr>
+            <td style="text-align: center;"><input type="checkbox" class="student-checkbox w-4 h-4 cursor-pointer accent-blue-600" value="${st.id}"></td>
             <td style="text-align: center;">${index + 1}</td>
-            <td class="name-cell"><input type="text" value="${st.name}" onchange="updateStudentScore('${grade}', '${st.id}', 'name', this.value)" style="border:none; background:transparent; width:100%; font-weight:bold; outline:none;"></td>
+            <td class="name-cell"><input type="text" id="edit_stu_name_${st.id}" value="${st.name}" onchange="updateStudentScore('${grade}', '${st.id}', 'name', this.value)" style="border:none; background:transparent; width:100%; font-weight:bold; outline:none;"></td>
             <td style="text-align: center;"><input type="number" min="0" max="1" value="${st.lao}" class="score-input" onkeydown="handleScoreNavigation(event, this)" onchange="updateStudentScore('${grade}', '${st.id}', 'lao', this)" style="width: 60px; text-align: center; font-weight: bold;"></td>
             <td style="text-align: center;"><input type="number" min="0" max="1" value="${st.math}" class="score-input" onkeydown="handleScoreNavigation(event, this)" onchange="updateStudentScore('${grade}', '${st.id}', 'math', this)" style="width: 60px; text-align: center; font-weight: bold;"></td>
-            <td style="text-align: center;"><button class="btn btn-danger" style="padding: 4px 8px; font-size: 11px;" onclick="deleteStudentScore('${grade}', '${st.id}')">🗑️</button></td>
+            <td style="text-align: center;"><button class="btn btn-primary shadow-sm" style="padding: 4px 10px; font-size: 12px;" onclick="document.getElementById('edit_stu_name_${st.id}').focus()">✏️ ແກ້ໄຂ</button></td>
         </tr>`;
     });
     tbody.innerHTML = html;
@@ -1627,6 +1632,33 @@ function updateStudentScore(grade, id, field, elementOrValue) {
 }
 
 function deleteStudentScore(grade, id) { studentScores[grade] = studentScores[grade].filter(x => x.id !== id); saveStudentScores(); renderPart3Table(); }
+
+function toggleAllStudents(source) {
+    const checkboxes = document.querySelectorAll('.student-checkbox');
+    checkboxes.forEach(cb => { cb.checked = source.checked; });
+}
+
+function deleteSelectedStudents() {
+    const grade = document.getElementById('part3GradeSelect').value;
+    const checkboxes = document.querySelectorAll('.student-checkbox:checked');
+    if (checkboxes.length === 0) { 
+        showToast('ກະລຸນາເລືອກນັກຮຽນທີ່ຕ້ອງການລຶບກ່ອນ (ຕິກເລືອກທາງຊ້າຍມື)', 'warning'); 
+        return; 
+    }
+    
+    showConfirm(`ທ່ານຕ້ອງການລຶບລາຍຊື່ນັກຮຽນທີ່ເລືອກທັງໝົດ ${checkboxes.length} ຄົນ ແທ້ບໍ?`, () => {
+        const idsToDelete = Array.from(checkboxes).map(cb => cb.value);
+        studentScores[grade] = studentScores[grade].filter(st => !idsToDelete.includes(st.id));
+        saveStudentScores();
+        renderPart3Table();
+        
+        const selectAllBtn = document.getElementById('selectAllStudents');
+        if(selectAllBtn) selectAllBtn.checked = false;
+        
+        showToast(`ລຶບຂໍ້ມູນສຳເລັດ ${checkboxes.length} ລາຍການ`, 'success');
+    }, 'ຢືນຢັນການລຶບ');
+}
+
 function calculatePart3Summary(grade) {
     const list = studentScores[grade] || [];
     if (list.length === 0) {
