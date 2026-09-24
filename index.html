@@ -2147,10 +2147,14 @@ function renderDashboard() {
     ay.value = state.school.year || `${new Date().getFullYear()}-${new Date().getFullYear()+1}`;
   }
   
+  // ຈື່ຄ່າທີ່ເລືອກໄວ້ໃນປັດຈຸບັນ (ກໍລະນີບໍ່ມີການໂຫຼດໜ້າໃໝ່)
+  const currentDist = document.getElementById('filterDistrict')?.value;
+  const currentGroup = document.getElementById('filterGroup')?.value;
+  
   initLocationSelectors();
 
   // ເລືອກ ເມືອງ, ກຸ່ມ, ໂຮງຮຽນ ອັດຕະໂນມັດ ຕາມທີ່ເຄີຍບັນທຶກໄວ້ຫຼ້າສຸດ
-  if (state.school && state.school.code) {
+  if (state.school && state.school.code && state.school.code !== 'all_schools') {
       let foundDist = "", foundGroup = "";
       for(let d of LOCATION_DATA) {
           for(let g of (d.groups || [])) {
@@ -2173,6 +2177,28 @@ function renderDashboard() {
           const schoolSelect = document.getElementById('filterSchool');
           if(schoolSelect) { schoolSelect.value = state.school.code; }
       }
+  } else {
+      // ກໍລະນີເລືອກ "ລວມທຸກໂຮງຮຽນ" (all_schools) ມັນຈະຊອກຫາບໍ່ເຫັນໃນ LOCATION_DATA
+      // ເຮົາຕ້ອງໃຊ້ຄ່າເມືອງ/ກຸ່ມ ທີ່ຈື່ໄວ້ໃນ state.school ຫຼື ໃນ dropdown ປັດຈຸບັນ
+      const savedDist = currentDist || (state.school ? state.school.district : "");
+      const savedGroup = currentGroup || (state.school ? state.school.group : "");
+      
+      const distSelect = document.getElementById('filterDistrict');
+      if (distSelect && savedDist) { 
+          distSelect.value = savedDist; 
+          onDistrictChange(); 
+          
+          const groupSelect = document.getElementById('filterGroup');
+          if (groupSelect && savedGroup) { 
+              groupSelect.value = savedGroup; 
+              onGroupChange(); 
+              
+              const schoolSelect = document.getElementById('filterSchool');
+              if (schoolSelect && state.school && state.school.code) {
+                  schoolSelect.value = state.school.code;
+              }
+          }
+      }
   }
 
   calculateAll();
@@ -2189,6 +2215,12 @@ function saveSchoolInfo() {
   state.school.code = schoolSelect.value;
   state.school.name = schoolSelect.options[schoolSelect.selectedIndex].text;
   state.school.year = document.getElementById('academicYear').value;
+  
+  // ບັນທຶກເມືອງ ແລະ ກຸ່ມ ທີ່ເລືອກໄວ້ ເພື່ອແກ້ໄຂບັນຫາການເລືອກ "ລວມທຸກໂຮງຮຽນ"
+  const distSelect = document.getElementById('filterDistrict');
+  if (distSelect) state.school.district = distSelect.value;
+  const groupSelect = document.getElementById('filterGroup');
+  if (groupSelect) state.school.group = groupSelect.value;
   
   // ບັນທຶກສະເພາະການຕັ້ງຄ່າໂຮງຮຽນລົງໃນເຄື່ອງ (Local) ເພື່ອຈື່ວ່າເລືອກໂຮງຮຽນໃດໄວ້
   saveLocalConfig(); 
