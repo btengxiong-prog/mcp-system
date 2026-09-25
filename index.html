@@ -2559,8 +2559,6 @@ function onDistrictChange() {
 
     // ກະຕຸ້ນໃຫ້ໂຫຼດໂຮງຮຽນຕໍ່
     onGroupChange();
-    
-    if (typeof loadAdminSummary === 'function') loadAdminSummary();
 }
 
 function onGroupChange() {
@@ -2627,8 +2625,6 @@ function onGroupChange() {
     if (schoolSelect.value) {
         saveSchoolInfo(); 
     }
-    
-    if (typeof loadAdminSummary === 'function') loadAdminSummary();
 }
 
 function getFlatLocationData() {
