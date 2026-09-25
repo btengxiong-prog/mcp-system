@@ -3306,7 +3306,8 @@ function renderSummaryGroupTable(schools, allSchoolsData, allStudentData, year) 
                 });
 
                 if (validSchools > 0) {
-                    const avg = totalPercentSum / validSchools;
+                    // ແກ້ໄຂຕົວຫານຈາກ validSchools ເປັນ schools.length ໃຫ້ກົງກັບຈຳນວນໂຮງຮຽນທັງໝົດ
+                    const avg = totalPercentSum / schools.length; 
                     let statusHtml = '';
                     if (avg >= 75) statusHtml = '<span class="font-bold text-green-600">✓ ຜ່ານເກນ</span>';
                     else if (avg >= 50) statusHtml = '<span class="font-bold text-yellow-600">~ ປັບປຸງໜ້ອຍ</span>';
