@@ -831,8 +831,49 @@ let state = {
   part3: {},
   focusAreas: [],
   activities: [],
-  planTarget: 75
+  planTarget: 75,
+  aggP1: 0, aggP2: 0, aggP3: 0, aggTotal: 0, // ເພີ່ມສຳລັບເກັບຄ່າສະເລ່ຍແຕ່ລະພາກ
+  aggregatedAspectScores: null // ເພີ່ມສຳລັບເກັບຄ່າສະເລ່ຍລາຍດ້ານ
 };
+
+// ເພີ່ມຟັງຊັນຊ່ວຍຄຳນວນແຕ່ລະດ້ານຂອງໂຮງຮຽນດຽວ (ສຳລັບໃຊ້ໃນການສະເລ່ຍ)
+function calcSingleSchoolAspects(sData, stData) {
+    const results = [];
+    MCP_DATA.part1.aspects.forEach((a, ai) => {
+        let sum = 0, count = 0; const start = ai * 5;
+        for (let i = start; i < start + 5; i++) {
+            const v = sData.part1 ? sData.part1[i] : null;
+            if (v === 'pass') sum += 100; else if (v === 'improve') sum += 50;
+            count++;
+        }
+        results.push({ part: 'ພາກທີ I', aspect: a.name, score: count > 0 ? sum / count : 0 });
+    });
+    const p2Ranges = [[0,5],[5,12],[12,20]];
+    MCP_DATA.part2.aspects.forEach((a, ai) => {
+        let sum = 0, count = 0; const [s, e] = p2Ranges[ai];
+        for (let i = s; i < e; i++) {
+            const v = sData.part2 ? sData.part2[i] : null;
+            if (v === 'pass') sum += 100; else if (v === 'improve') sum += 50;
+            count++;
+        }
+        results.push({ part: 'ພາກທີ II', aspect: a.name, score: count > 0 ? sum / count : 0 });
+    });
+    const grades = ['ປ_1', 'ປ_2', 'ປ_3', 'ປ_4', 'ປ_5'];
+    MCP_DATA.part3.aspects.forEach((a, ai) => {
+        let sum = 0; const subjectKey = ai === 0 ? 'lao' : 'math';
+        grades.forEach(grade => {
+            const list = stData[grade] || [];
+            const listArray = Array.isArray(list) ? list : Object.values(list);
+            if (listArray.length > 0) {
+                let passCount = 0;
+                listArray.forEach(st => { if (Number(st[subjectKey]) === 1) passCount++; });
+                sum += (passCount / listArray.length) * 100;
+            }
+        });
+        results.push({ part: 'ພາກທີ III', aspect: a.name, score: sum / 5 });
+    });
+    return results;
+}
 // 1. ຕັ້ງຄ່າການເຊື່ອມຕໍ່ Firebase (ໂຄດຂອງທ່ານ)
 const firebaseConfig = {
     apiKey: "AIzaSyAL3XdAIhNDh-TOp1XjQyE6lWRrKTAUJ3k",
@@ -946,14 +987,17 @@ function loadSchoolData() {
               let sumP1 = 0, sumP2 = 0, sumP3 = 0, sumTotal = 0;
               let validCount = 0;
 
+              let aspectSums = new Array(10).fill(0);
+              let tempAspectTemplate = [];
+
               targetSchools.forEach(s => {
                   const key = s.code + '_' + year;
-                  const sData = allSchools[key];
-                  const stData = allStus[key];
+                  const sData = allSchools[key] || {};
+                  const stData = allStus[key] || {};
                   let p1=0, p2=0, p3=0;
 
                   // ຄິດໄລ່ ພາກ 1
-                  if(sData && sData.part1) {
+                  if(sData.part1) {
                       let pass1=0, imp1=0;
                       for(let i=0; i<25; i++) {
                           if(sData.part1[i]==='pass') pass1++;
@@ -963,7 +1007,7 @@ function loadSchoolData() {
                   }
 
                   // ຄິດໄລ່ ພາກ 2
-                  if(sData && sData.part2) {
+                  if(sData.part2) {
                       let pass2=0, imp2=0;
                       for(let i=0; i<20; i++) {
                           if(sData.part2[i]==='pass') pass2++;
@@ -992,12 +1036,31 @@ function loadSchoolData() {
 
                   const total = (p1 * 0.20) + (p2 * 0.30) + (p3 * 0.50);
                   sumP1 += p1; sumP2 += p2; sumP3 += p3; sumTotal += total;
+                  
+                  // ຄິດໄລ່ແຕ່ລະດ້ານ (Aspects) ສຳລັບໂຮງຮຽນນີ້ແລ້ວບວກເຂົ້າກັນ
+                  const schoolAspects = calcSingleSchoolAspects(sData, stData);
+                  if (tempAspectTemplate.length === 0) tempAspectTemplate = schoolAspects; 
+                  schoolAspects.forEach((asp, idx) => { aspectSums[idx] += asp.score; });
+
                   validCount++;
               });
 
               if(validCount > 0) {
-                  setAggregatedUI(sumP1/validCount, sumP2/validCount, sumP3/validCount, sumTotal/validCount);
+                  state.aggP1 = sumP1 / validCount;
+                  state.aggP2 = sumP2 / validCount;
+                  state.aggP3 = sumP3 / validCount;
+                  state.aggTotal = sumTotal / validCount;
+                  
+                  // ບັນທຶກຄ່າສະເລ່ຍລາຍດ້ານໄວ້ໃນ State ເພື່ອໃຫ້ໜ້າບູລິມະສິດ ແລະ ລາຍງານດຶງໄປໃຊ້
+                  state.aggregatedAspectScores = tempAspectTemplate.map((asp, idx) => ({
+                      part: asp.part,
+                      aspect: asp.aspect,
+                      score: aspectSums[idx] / validCount
+                  }));
+                  setAggregatedUI(state.aggP1, state.aggP2, state.aggP3, state.aggTotal);
               } else {
+                  state.aggP1 = 0; state.aggP2 = 0; state.aggP3 = 0; state.aggTotal = 0;
+                  state.aggregatedAspectScores = null;
                   setAggregatedUI(0,0,0,0);
               }
           });
@@ -1510,26 +1573,48 @@ function clearPartData(partNum) {
       showToast(`ລຶບຂໍ້ມູນພາກທີ ${partNum} ສຳເລັດແລ້ວ! ປັດຈຸບັນເປັນຄ່າວ່າງ.`, 'success');
   }, `ຢືນຢັນການລຶບຂໍ້ມູນ ພາກທີ ${partNum}`);
 }
+
 function calcPart1() {
+  if (state.school && state.school.code === 'all_schools') return state.aggP1 || 0;
   let pass = 0, improve = 0, fail = 0;
   for (let i = 0; i < 25; i++) {
     const v = (state.part1 && state.part1[i]) ? state.part1[i] : null; 
-    if (v === 'pass') pass++; 
-    else if (v === 'improve') improve++; 
-    else if (v === 'fail') fail++;
+    if (v === 'pass') pass++; else if (v === 'improve') improve++; else if (v === 'fail') fail++;
   }
   return ((pass * 100) + (improve * 50) + (fail * 0)) / 25;
 }
 
 function calcPart2() {
+  if (state.school && state.school.code === 'all_schools') return state.aggP2 || 0;
   let pass = 0, improve = 0, fail = 0;
   for (let i = 0; i < 20; i++) {
     const v = (state.part2 && state.part2[i]) ? state.part2[i] : null; 
-    if (v === 'pass') pass++; 
-    else if (v === 'improve') improve++; 
-    else if (v === 'fail') fail++;
+    if (v === 'pass') pass++; else if (v === 'improve') improve++; else if (v === 'fail') fail++;
   }
   return ((pass * 100) + (improve * 50) + (fail * 0)) / 20;
+}
+
+function calcPart3() {
+  if (state.school && state.school.code === 'all_schools') return state.aggP3 || 0;
+  let totalPercentSum = 0;
+  const grades = ['ປ.1', 'ປ.2', 'ປ.3', 'ປ.4', 'ປ.5'];
+  grades.forEach(grade => {
+      const list = studentScores[grade] || [];
+      if (list.length > 0) {
+          let totalLao = 0, totalMath = 0;
+          list.forEach(st => {
+              if (Number(st.lao) === 1) totalLao++;
+              if (Number(st.math) === 1) totalMath++;
+          });
+          totalPercentSum += ((totalLao / list.length) * 100) + ((totalMath / list.length) * 100);
+      }
+  });
+  return totalPercentSum / 10;
+}
+
+function calcTotal() {
+  if (state.school && state.school.code === 'all_schools') return state.aggTotal || 0;
+  return (calcPart1() * 0.20) + (calcPart2() * 0.30) + (calcPart3() * 0.50);
 }
 
 // ສ້າງຕົວແປສຳລັບເກັບຄ່າ ID ຂອງນັກຮຽນທີ່ກຳລັງຖືກແກ້ໄຂ
@@ -1928,25 +2013,6 @@ function renderSummaryPart3() {
     
     html += `<tr class="bg-gray-100 font-bold"><td colspan="2" class="border border-gray-400 text-center p-2">ລວມ</td><td class="border border-gray-400 text-center text-red-600 text-lg">${totalPass > 0 ? totalPass : ''}</td><td class="border border-gray-400 text-center text-red-600 text-lg">${totalImp1 > 0 ? totalImp1 : ''}</td><td class="border border-gray-400 text-center text-red-600 text-lg">${totalImp2 > 0 ? totalImp2 : ''}</td><td class="border border-gray-400 text-center relative overflow-hidden"><svg class="absolute inset-0 w-full h-full text-gray-400" preserveAspectRatio="none" viewBox="0 0 100 100"><line x1="0" y1="0" x2="100" y2="100" stroke="currentColor" stroke-width="1"></line><line x1="100" y1="0" x2="0" y2="100" stroke="currentColor" stroke-width="1"></line></svg></td></tr><tr class="bg-gray-100 font-bold"><td colspan="5" class="border border-gray-400 text-center p-2">ອັດຕາ ມຄພ ພາກທີ III</td><td class="border border-gray-400 text-center text-red-600">${p3Score.toFixed(2)}%</td></tr>`;
     tbody.innerHTML = html;
-}
-
-function calcPart3() {
-  let totalPercentSum = 0;
-  const grades = ['ປ.1', 'ປ.2', 'ປ.3', 'ປ.4', 'ປ.5'];
-  grades.forEach(grade => {
-      const list = studentScores[grade] || [];
-      if (list.length > 0) {
-          let totalLao = 0, totalMath = 0;
-          list.forEach(st => {
-              if (Number(st.lao) === 1) totalLao++;
-              if (Number(st.math) === 1) totalMath++;
-          });
-          const percentLao = (totalLao / list.length) * 100;
-          const percentMath = (totalMath / list.length) * 100;
-          totalPercentSum += (percentLao + percentMath);
-      }
-  });
-  return totalPercentSum / 10;
 }
 
 function calcTotal() {
@@ -2359,6 +2425,11 @@ function saveSchoolInfo() {
 }
 
 function calcAspectScores() {
+  // ຖ້າເປັນໂໝດລວມທຸກໂຮງຮຽນ ໃຫ້ສົ່ງຄ່າທີ່ຄຳນວນສະເລ່ຍແລ້ວອອກໄປເລີຍ
+  if (state.school && state.school.code === 'all_schools' && state.aggregatedAspectScores) {
+      return state.aggregatedAspectScores;
+  }
+
   const results = [];
   MCP_DATA.part1.aspects.forEach((a, ai) => {
     let sum = 0, count = 0; const start = ai * 5;
