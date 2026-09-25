@@ -833,30 +833,6 @@ let state = {
   activities: [],
   planTarget: 75
 };
-
-// ========================================================
-// ລະບົບ Cache ສຳລັບດຶງຂໍ້ມູນລວມ (ຫຼຸດການໂຫຼດຊ້ຳຊ້ອນ ໃຫ້ລະບົບໄວຂຶ້ນ)
-// ========================================================
-let dbCache = { schools: null, students: null, lastFetch: 0 };
-function fetchAllDB(callback) {
-    const now = Date.now();
-    // ຖ້າດຶງໄປແລ້ວບໍ່ຮອດ 30 ວິນາທີ ໃຫ້ໃຊ້ຂອງເກົ່າເລີຍ (ໄວທັນໃຈ)
-    if (dbCache.schools && dbCache.students && (now - dbCache.lastFetch < 30000)) {
-        callback(dbCache.schools, dbCache.students);
-        return;
-    }
-    Promise.all([
-        db.ref('schools').once('value'),
-        db.ref('studentScores').once('value')
-    ]).then(snaps => {
-        dbCache.schools = snaps[0].val() || {};
-        dbCache.students = snaps[1].val() || {};
-        dbCache.lastFetch = Date.now();
-        callback(dbCache.schools, dbCache.students);
-    }).catch(err => console.error("Cache Error:", err));
-}
-function invalidateCache() { dbCache.lastFetch = 0; }
-
 // 1. ຕັ້ງຄ່າການເຊື່ອມຕໍ່ Firebase (ໂຄດຂອງທ່ານ)
 const firebaseConfig = {
     apiKey: "AIzaSyAL3XdAIhNDh-TOp1XjQyE6lWRrKTAUJ3k",
@@ -890,7 +866,6 @@ function saveLocalConfig() {
 
 function saveState() {
   saveLocalConfig(); // ບັນທຶກສະຖານະການເລືອກໂຮງຮຽນ
-  invalidateCache(); // ລ້າງ Cache ເມື່ອມີການບັນທຶກໃໝ່
 
   if (state.school && state.school.code) {
     const schoolKey = state.school.code + '_' + state.school.year;
@@ -1051,8 +1026,8 @@ function loadSchoolData() {
           state.part1 = {}; state.part2 = {}; state.part3 = {};
           state.focusAreas = []; state.activities = []; state.planTarget = 75;
         }
-        updatePartFormUI(1);
-        updatePartFormUI(2);
+        renderPartForm(1, 'part1Form');
+        renderPartForm(2, 'part2Form');
         calculateAll();
       });
 
@@ -1491,19 +1466,6 @@ function renderPartForm(partNum, containerId) {
     html += `</div>`;
   });
   container.innerHTML = html;
-}
-
-// ອັບເດດສະເພາະປຸ່ມຕິກ ໂດຍບໍ່ສ້າງ DOM ໃໝ່ (ຊ່ວຍໃຫ້ຕິກແລ້ວບໍ່ກະຕຸກ)
-function updatePartFormUI(partNum) {
-  const total = partNum === 1 ? 25 : 20;
-  const pData = (state && state['part' + partNum]) ? state['part' + partNum] : {};
-  for (let idx = 0; idx < total; idx++) {
-    const savedValue = pData[idx] !== undefined ? pData[idx] : (pData[String(idx)] || '');
-    const radios = document.getElementsByName(`p${partNum}_${idx}`);
-    for (let i = 0; i < radios.length; i++) {
-        radios[i].checked = (radios[i].value === savedValue);
-    }
-  }
 }
 
 function setPart(partNum, idx, value) {
@@ -2139,7 +2101,11 @@ function loadAdminSummary() {
     document.getElementById('adminCompletedSchools').innerHTML = '<span class="text-sm">ກຳລັງໂຫຼດ...</span>';
     document.getElementById('adminPendingSchools').innerHTML = '<span class="text-sm">ກຳລັງໂຫຼດ...</span>';
 
-          fetchAllDB((allData, stuData) => {
+    db.ref('schools').once('value').then(snap => {
+        const allData = snap.val() || {};
+        
+        db.ref('studentScores').once('value').then(stuSnap => {
+             const stuData = stuSnap.val() || {};
              adminCompletedList = [];
              adminPendingList = [];
 
@@ -2179,6 +2145,7 @@ function loadAdminSummary() {
              document.getElementById('adminPendingSchools').innerText = adminPendingList.length;
              document.getElementById('adminCompletionRate').innerText = ((adminCompletedList.length / total) * 100).toFixed(1) + '%';
         });
+    });
 }
 
 let currentModalType = '';
@@ -2387,11 +2354,8 @@ function saveSchoolInfo() {
   // ບັນທຶກສະເພາະການຕັ້ງຄ່າໂຮງຮຽນລົງໃນເຄື່ອງ (Local) ເພື່ອຈື່ວ່າເລືອກໂຮງຮຽນໃດໄວ້
   saveLocalConfig(); 
   
-  // ໂຫຼດຂໍ້ມູນໂຮງຮຽນໃໝ່
+  // ໂຫຼດຂໍ້ມູນໂຮງຮຽນໃໝ່ (ຫ້າມມີຄຳສັ່ງ saveState() ຢູ່ບ່ອນນີ້ເດັດຂາດ)
   loadSchoolData();
-  
-  // ໃຫ້ມັນອັບເດດລາຍງານ Admin ບາດດຽວຢູ່ບ່ອນນີ້ (ຫຼຸດການດຶງຂໍ້ມູນຊ້ຳຊ້ອນໄດ້ຫຼາຍ)
-  if (typeof loadAdminSummary === 'function') loadAdminSummary();
 }
 
 function calcAspectScores() {
@@ -2595,6 +2559,8 @@ function onDistrictChange() {
 
     // ກະຕຸ້ນໃຫ້ໂຫຼດໂຮງຮຽນຕໍ່
     onGroupChange();
+    
+    if (typeof loadAdminSummary === 'function') loadAdminSummary();
 }
 
 function onGroupChange() {
@@ -2661,6 +2627,8 @@ function onGroupChange() {
     if (schoolSelect.value) {
         saveSchoolInfo(); 
     }
+    
+    if (typeof loadAdminSummary === 'function') loadAdminSummary();
 }
 
 function getFlatLocationData() {
@@ -3204,9 +3172,14 @@ function generateSummaryReport() {
     document.getElementById('summaryGroupTableContainer').innerHTML = '<div class="text-center py-10 text-blue-600 font-bold">ກຳລັງດຶງຂໍ້ມູນຈາກຖານຂໍ້ມູນ... ⏳</div>';
 
     // ດຶງຂໍ້ມູນທັງ schools ແລະ studentScores ເພື່ອເອົາມາໄລ່ ພາກ 3 ພ້ອມ
-    fetchAllDB((allSchoolsData, allStudentData) => {
-        renderSummaryGroupTable(targetSchools, allSchoolsData, allStudentData, year);
-        // ໝາຍເຫດ: ສຳລັບ printSummaryGroup ໃຫ້ປ່ຽນຈາກ renderSummaryGroupTable ເປັນ generatePrintReportFormat(...)
+    db.ref('schools').once('value').then(schoolSnap => {
+        const allSchoolsData = schoolSnap.val() || {};
+        db.ref('studentScores').once('value').then(studentSnap => {
+            const allStudentData = studentSnap.val() || {};
+            renderSummaryGroupTable(targetSchools, allSchoolsData, allStudentData, year);
+        });
+    }).catch(err => {
+        alert("ດຶງຂໍ້ມູນບໍ່ສຳເລັດ: " + err.message);
     });
 }
 
