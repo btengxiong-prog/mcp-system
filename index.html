@@ -229,7 +229,7 @@
         <div class="card p-5 text-center"><div class="text-3xl font-bold text-purple-600" id="dashPart3">0%</div><div class="text-sm text-gray-500 mt-1">ພາກທີ III (50%)</div></div>
       </div>
       <div class="card p-5 mb-4">
-        <div class="flex items-center justify-between mb-3"><h2 class="font-bold text-lg">ປະເພດໂຮງຮຽນ</h2><span id="dashCategory" class="badge badge-yellow text-base px-4 py-2">ຍັງບໍ່ປະເມີນ</span></div>
+        <div class="flex items-center justify-between mb-3"><h2 id="dashCategoryTitle" class="font-bold text-lg">ປະເພດໂຮງຮຽນ</h2><span id="dashCategory" class="badge badge-yellow text-base px-4 py-2">ຍັງບໍ່ປະເມີນ</span></div>
         <div class="progress-bar"><div id="dashProgress" class="progress-fill bg-blue-500" style="width:0%">0%</div></div>
         <div class="flex justify-between text-xs text-gray-500 mt-2"><span>🔴 ສີແດງ (&lt;50%)</span><span>🟡 ສີເຫຼືອງ (50-75%)</span><span>🟢 ສີຂຽວ (≥75%)</span></div>
       </div>
@@ -1121,7 +1121,12 @@ function setAggregatedUI(p1, p2, p3, total) {
   setTxt('dashPart3', p3.toFixed(2) + '%');
   setTxt('dashTotal', total.toFixed(2) + '%');
 
-  const cat = getCategory(total);
+  const currentLevel = getCurrentAnalysisLevel();
+  const cat = getCategory(total, currentLevel);
+  
+  const titleEl = document.getElementById('dashCategoryTitle');
+  if (titleEl) titleEl.innerText = getLevelTitle(currentLevel);
+
   const catEl = document.getElementById('dashCategory');
   if (catEl) {
       catEl.innerText = cat.label + ' (ສະເລ່ຍລວມ)';
@@ -2019,10 +2024,34 @@ function calcTotal() {
   return (calcPart1() * 0.20) + (calcPart2() * 0.30) + (calcPart3() * 0.50);
 }
 
-function getCategory(score) {
-  if (score >= 75) return { label: 'ໂຮງຮຽນສີຂຽວ', cls: 'badge-green', color: '#16a34a' };
-  if (score >= 50) return { label: 'ໂຮງຮຽນສີເຫຼືອງ', cls: 'badge-yellow', color: '#f59e0b' };
-  return { label: 'ໂຮງຮຽນສີແດງ', cls: 'badge-red', color: '#dc2626' };
+// ຟັງຊັນກວດສອບວ່າປັດຈຸບັນກຳລັງເບິ່ງຂໍ້ມູນລະດັບໃດ (ເມືອງ, ກຸ່ມ, ໂຮງຮຽນ)
+function getCurrentAnalysisLevel() {
+    if (!state.school || state.school.code !== 'all_schools') return 'school';
+    const dCode = document.getElementById('filterDistrict')?.value;
+    const gCode = document.getElementById('filterGroup')?.value;
+    if (dCode === 'all_districts') return 'all';
+    if (gCode === 'all_groups' || !gCode) return 'district';
+    return 'group';
+}
+
+// ຟັງຊັນປ່ຽນຊື່ຫົວຂໍ້ກ່ອງ ປະເພດ...
+function getLevelTitle(level) {
+    if (level === 'district') return 'ປະເພດເມືອງ';
+    if (level === 'group') return 'ປະເພດກຸ່ມໂຮງຮຽນ';
+    if (level === 'all') return 'ປະເພດລວມ (ທຸກເມືອງ)';
+    return 'ປະເພດໂຮງຮຽນ';
+}
+
+// ຟັງຊັນປ່ຽນປ້າຍສີ ໃຫ້ກົງກັບລະດັບທີ່ເລືອກ
+function getCategory(score, level = 'school') {
+  let prefix = 'ໂຮງຮຽນ';
+  if (level === 'district') prefix = 'ເມືອງ';
+  else if (level === 'group') prefix = 'ກຸ່ມໂຮງຮຽນ';
+  else if (level === 'all') prefix = 'ລວມ';
+
+  if (score >= 75) return { label: `${prefix}ສີຂຽວ`, cls: 'badge-green', color: '#16a34a' };
+  if (score >= 50) return { label: `${prefix}ສີເຫຼືອງ`, cls: 'badge-yellow', color: '#f59e0b' };
+  return { label: `${prefix}ສີແດງ`, cls: 'badge-red', color: '#dc2626' };
 }
 
 let chartParts, chartAspects;
@@ -2076,7 +2105,9 @@ function calculateAll() {
   const p2 = calcPart2();
   const p3 = calcPart3();
   const total = calcTotal();
-  const cat = getCategory(total);
+  
+  const currentLevel = getCurrentAnalysisLevel();
+  const cat = getCategory(total, currentLevel);
 
   try {
     if (typeof renderSummaryPart3 === 'function') renderSummaryPart3();
@@ -2095,6 +2126,9 @@ function calculateAll() {
   setTxt('dashPart3', p3.toFixed(2) + '%');
   setTxt('dashTotal', total.toFixed(2) + '%');
 
+  const titleEl = document.getElementById('dashCategoryTitle');
+  if (titleEl) titleEl.innerText = getLevelTitle(currentLevel);
+
   const catEl = document.getElementById('dashCategory');
   if (catEl) {
       catEl.innerText = cat.label;
@@ -2110,7 +2144,7 @@ function calculateAll() {
 
   if (document.getElementById('planCurrent')) document.getElementById('planCurrent').value = total.toFixed(2) + '%';
   if (document.getElementById('planDiff')) document.getElementById('planDiff').value = (state.planTarget - total).toFixed(2) + '%';
-  if (document.getElementById('planCategory')) document.getElementById('planCategory').value = getCategory(state.planTarget).label;
+  if (document.getElementById('planCategory')) document.getElementById('planCategory').value = getCategory(state.planTarget, currentLevel).label;
 
   try {
     if (document.getElementById('chartParts') && document.getElementById('chartAspects')) {
@@ -2468,19 +2502,6 @@ function calcAspectScores() {
   return results;
 }
 
-function renderPriority() {
-  const scores = calcAspectScores();
-  scores.sort((a, b) => a.score - b.score);
-  let html = `<table><thead><tr><th>ອັນດັບ</th><th>ພາກ</th><th>ດ້ານ</th><th>ອັດຕາ ມຄພ</th><th>ສະຖານະ</th></tr></thead><tbody>`;
-  scores.forEach((s, i) => {
-    const cat = getCategory(s.score);
-    html += `<tr><td><b>${i + 1}</b></td><td>${s.part}</td><td>${s.aspect}</td><td><b>${s.score.toFixed(2)}%</b></td><td><span class="badge ${cat.cls}">${cat.label}</span></td></tr>`;
-  });
-  html += `</tbody></table>`;
-  document.getElementById('priorityTable').innerHTML = html;
-  renderFocusList();
-}
-
 function renderFocusList() {
   const el = document.getElementById('focusList');
   if (!state.focusAreas.length) { el.innerHTML = '<p class="text-gray-400 text-sm">ຍັງບໍ່ມີວຽກຈຸດສຸມ. ກົດ "+ ເພີ່ມວຽກຈຸດສຸມ" ເພື່ອເລີ່ມ.</p>'; return; }
@@ -2499,15 +2520,6 @@ function removeFocus(i) {
   showConfirm('ທ່ານຕ້ອງການລຶບວຽກຈຸດສຸມນີ້ແທ້ບໍ?', () => { state.focusAreas.splice(i, 1); saveState(); renderFocusList(); showToast('ລຶບວຽກຈຸດສຸມສຳເລັດ', 'success'); }, 'ຢືນຢັນການລຶບ');
 }
 function updateFocus(i, field, val) { state.focusAreas[i][field] = val; saveState(); }
-
-function renderPlan() {
-  const total = calcTotal();
-  document.getElementById('planCurrent').value = total.toFixed(2) + '%';
-  document.getElementById('planDiff').value = (state.planTarget - total).toFixed(2) + '%';
-  document.getElementById('planCategory').value = getCategory(state.planTarget).label;
-  document.getElementById('planTarget').value = state.planTarget;
-  renderActivityList();
-}
 
 function renderActivityList() {
   const el = document.getElementById('activityList');
@@ -2546,27 +2558,35 @@ function updatePlanTargetUI(val) {
     calculateAll(); // ສັ່ງໃຫ້ຄຳນວນເປີເຊັນ ແລະ ປະເພດໂຮງຮຽນຄາດໝາຍໃໝ່ທັນທີ
 }
 
-function renderReport() {
-  const p1 = calcPart1(), p2 = calcPart2(), p3 = calcPart3(), total = calcTotal(), cat = getCategory(total);
-  document.getElementById('rptSchoolName').innerText = state.school.name;
-  document.getElementById('rptYear').innerText = state.school.year;
-  document.getElementById('rptPartTable').innerHTML = `
-    <tr><td>ພາກທີ I: ປັດໄຈນຳເຂົ້າ</td><td>${p1.toFixed(2)}%</td><td>20%</td><td>${(p1*0.2).toFixed(2)}%</td></tr>
-    <tr><td>ພາກທີ II: ຂະບວນການ ແລະ ພຶດຕິກຳ</td><td>${p2.toFixed(2)}%</td><td>30%</td><td>${(p2*0.3).toFixed(2)}%</td></tr>
-    <tr><td>ພາກທີ III: ຜົນການຮຽນ</td><td>${p3.toFixed(2)}%</td><td>50%</td><td>${(p3*0.5).toFixed(2)}%</td></tr>
-    <tr style="background:#dbeafe"><td><b>ລວມ</b></td><td></td><td><b>100%</b></td><td><b>${total.toFixed(2)}%</b></td></tr>
-  `;
-  document.getElementById('rptTotal').innerText = total.toFixed(2) + '%';
-  document.getElementById('rptCategory').innerText = cat.label;
-  document.getElementById('rptCategory').className = 'badge ' + cat.cls + ' text-lg px-4 py-1';
-  const scores = calcAspectScores().sort((a, b) => a.score - b.score).slice(0, 5);
-  document.getElementById('rptPriorityTable').innerHTML = scores.map((s, i) => `<tr><td>${i + 1}</td><td>${s.part}</td><td>${s.aspect}</td><td>${s.score.toFixed(2)}%</td></tr>`).join('');
-  let focusHtml = '';
-  state.focusAreas.forEach((f, i) => { focusHtml += `<div class="mb-3 p-3 border rounded"><b>ວຽກຈຸດສຸມ ${i + 1}:</b> ${f.title || '(ຍັງບໍ່ປ້ອນ)'}</div>`; });
-  document.getElementById('rptFocusList').innerHTML = focusHtml || '<p class="text-gray-400">ຍັງບໍ່ມີວຽກຈຸດສຸມ</p>';
-  document.getElementById('rptTarget').innerText = state.planTarget + '%';
-  document.getElementById('rptDiff').innerText = (state.planTarget - total).toFixed(2) + '%';
+function renderPriority() {
+  const scores = calcAspectScores();
+  scores.sort((a, b) => a.score - b.score);
+  const currentLevel = getCurrentAnalysisLevel();
+  let html = `<table><thead><tr><th>ອັນດັບ</th><th>ພາກ</th><th>ດ້ານ</th><th>ອັດຕາ ມຄພ</th><th>ສະຖານະ</th></tr></thead><tbody>`;
+  scores.forEach((s, i) => {
+    const cat = getCategory(s.score, currentLevel);
+    html += `<tr><td><b>${i + 1}</b></td><td>${s.part}</td><td>${s.aspect}</td><td><b>${s.score.toFixed(2)}%</b></td><td><span class="badge ${cat.cls}">${cat.label}</span></td></tr>`;
+  });
+  html += `</tbody></table>`;
+  document.getElementById('priorityTable').innerHTML = html;
+  renderFocusList();
 }
+
+function renderPlan() {
+  const total = calcTotal();
+  const currentLevel = getCurrentAnalysisLevel();
+  document.getElementById('planCurrent').value = total.toFixed(2) + '%';
+  document.getElementById('planDiff').value = (state.planTarget - total).toFixed(2) + '%';
+  document.getElementById('planCategory').value = getCategory(state.planTarget, currentLevel).label;
+  document.getElementById('planTarget').value = state.planTarget;
+  renderActivityList();
+}
+
+//...
+function renderReport() {
+  const p1 = calcPart1(), p2 = calcPart2(), p3 = calcPart3(), total = calcTotal();
+  const currentLevel = getCurrentAnalysisLevel();
+  const cat = getCategory(total, currentLevel);
 
 function initLocationSelectors() {
     const districtSelect = document.getElementById('filterDistrict');
