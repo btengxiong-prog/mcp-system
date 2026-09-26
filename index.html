@@ -905,19 +905,30 @@ function saveLocalConfig() {
   localStorage.setItem('mcp_global_state', JSON.stringify(globalState));
 }
 
+// ຟັງຊັນສ້າງ Key ທີ່ແຍກຄວາມແຕກຕ່າງລະຫວ່າງ ໂຮງຮຽນດຽວ ກັບ ໂໝດລວມ(ເມືອງ/ກຸ່ມ)
+function getSchoolKey() {
+  if (state.school.code === 'all_schools') {
+    const d = state.school.district || 'all';
+    const g = state.school.group || 'all';
+    return 'agg_' + d + '_' + g + '_' + state.school.year;
+  }
+  return state.school.code + '_' + state.school.year;
+}
+
 function saveState() {
   saveLocalConfig(); // ບັນທຶກສະຖານະການເລືອກໂຮງຮຽນ
 
   if (state.school && state.school.code) {
-    const schoolKey = state.school.code + '_' + state.school.year;
-    // ສົ່ງຂໍ້ມູນສະເພາະຂອງໂຮງຮຽນນັ້ນ ຂຶ້ນ Firebase Realtime
+    const schoolKey = getSchoolKey(); // ໃຊ້ Key ໃໝ່ທີ່ຮອງຮັບໂໝດລວມ
+    
+    // ສົ່ງຂໍ້ມູນສະເພາະຂອງໂຮງຮຽນນັ້ນ ຫຼື ເມືອງ/ກຸ່ມ ຂຶ້ນ Firebase Realtime
     db.ref('schools/' + schoolKey).set({
       part1: state.part1 || {},
       part2: state.part2 || {},
       part3: state.part3 || {},
       focusAreas: state.focusAreas || [],
       activities: state.activities || [],
-      planTarget: state.planTarget || 75
+      planTarget: state.planTarget !== undefined ? state.planTarget : 75 // ແກ້ໄຂບໍ່ໃຫ້ກັບເປັນ 75 ຖ້າພິມເປັນ 0
     }).catch((error) => {
         alert("ເກີດຂໍ້ຜິດພາດໃນການບັນທຶກລົງ Firebase:\n" + error.message);
     });
@@ -950,7 +961,7 @@ function loadSchoolData() {
 
   const dCode = document.getElementById('filterDistrict')?.value;
   const gCode = document.getElementById('filterGroup')?.value;
-  const schoolKey = state.school.code + '_' + state.school.year;
+  const schoolKey = getSchoolKey(); // ໃຊ້ Key ໃໝ່ທີ່ຮອງຮັບໂໝດລວມ
 
   if (currentSchoolRef) currentSchoolRef.off();
   if (currentStudentRef) currentStudentRef.off();
@@ -964,6 +975,24 @@ function loadSchoolData() {
       // ============================================
       // ໂໝດສັງລວມເມືອງ/ກຸ່ມ (Aggregation Mode)
       // ============================================
+      
+      // ເພີ່ມການດຶງຂໍ້ມູນແຜນພັດທະນາ (Target, Focus, Activities) ສຳລັບໂໝດລວມ
+      currentSchoolRef = db.ref('schools/' + schoolKey);
+      currentSchoolRef.on('value', (snapshot) => {
+          const data = snapshot.val();
+          if (data) {
+              state.focusAreas = data.focusAreas || [];
+              state.activities = data.activities || [];
+              state.planTarget = data.planTarget !== undefined ? data.planTarget : 75;
+          } else {
+              state.focusAreas = [];
+              state.activities = [];
+              state.planTarget = 75;
+          }
+          if (typeof renderPlan === 'function') renderPlan();
+          if (typeof renderPriority === 'function') renderPriority();
+      });
+
       renderPartForm(1, 'part1Form');
       renderPartForm(2, 'part2Form');
       if (typeof renderPart3Table === 'function') renderPart3Table();
