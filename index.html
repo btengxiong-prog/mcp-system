@@ -2599,9 +2599,31 @@ function renderReport() {
   document.getElementById('rptCategory').className = 'badge ' + cat.cls + ' text-lg px-4 py-1';
   const scores = calcAspectScores().sort((a, b) => a.score - b.score).slice(0, 5);
   document.getElementById('rptPriorityTable').innerHTML = scores.map((s, i) => `<tr><td>${i + 1}</td><td>${s.part}</td><td>${s.aspect}</td><td>${s.score.toFixed(2)}%</td></tr>`).join('');
-  let focusHtml = '';
-  state.focusAreas.forEach((f, i) => { focusHtml += `<div class="mb-3 p-3 border rounded"><b>ວຽກຈຸດສຸມ ${i + 1}:</b> ${f.title || '(ຍັງບໍ່ປ້ອນ)'}</div>`; });
-  document.getElementById('rptFocusList').innerHTML = focusHtml || '<p class="text-gray-400">ຍັງບໍ່ມີວຽກຈຸດສຸມ</p>';
+  
+  // ຊຸດຂໍ້ຄວາມສຳລັບແປງຊື່ດ້ານ ເປັນປະໂຫຍກຈຸດສຸມອັດຕະໂນມັດ
+  const autoSummaryMap = {
+      "1. ໂຄງລ່າງພື້ນຖານ": "ປັບປຸງດ້ານໂຄງລ່າງພື້ນຖານ ໂດຍສະເພາະການສ້າງສະພາບແວດລ້ອມໂຮງຮຽນໃຫ້ໄດ້ມາດຕະຖານ, ມີນ້ຳໃຊ້ ແລະ ຫ້ອງນ້ຳພຽງພໍ.",
+      "2. ອຸປະກອນໃນຫ້ອງຮຽນ": "ປັບປຸງດ້ານອຸປະກອນໃນຫ້ອງຮຽນ ໂດຍສະເພາະກະດານ, ໂຕະ, ຕັ່ງນັ່ງໃຫ້ນັກຮຽນ ແລະ ຄູໃຫ້ພຽງພໍທຸກຫ້ອງຮຽນ.",
+      "3. ປຶ້ມແບບຮຽນ ແລະ ຄູ່ມືຄູ": "ຊຸກຍູ້ການສະໜອງປຶ້ມແບບຮຽນວິຊາພາສາລາວ, ຄະນິດສາດ ໃຫ້ນັກຮຽນ ແລະ ຄູ່ມືສຳລັບຄູໃຫ້ຄົບຖ້ວນ.",
+      "4. ອຸປະກອນ ແລະ ສື່ການສອນ": "ປັບປຸງດ້ານອຸປະກອນ ແລະ ສື່ການສອນ ໂດຍສະເພາະອຸປະກອນການຮຽນ-ການສອນວິຊາຄະນິດສາດ ແລະ ສື່ປະຈັກຕາອື່ນໆ.",
+      "5. ບຸກຄະລາກອນ ແລະ ຂໍ້ມູນຂ່າວສານ": "ປັບປຸງການຄຸ້ມຄອງຂໍ້ມູນຂ່າວສານ ເຊັ່ນ: ການບັນທຶກລາຍຮັບ-ລາຍຈ່າຍ ແລະ ການເຮັດສະຖິຕິໂຮງຮຽນ.",
+      "1. ທັດສະນະຄະຕິ": "ປັບປຸງດ້ານທັດສະນະຄະຕິກ່ຽວກັບການປະຕິບັດໂມງເວລາການຮຽນ-ການສອນ, ການໄປ-ມາຂອງຄູ ແລະ ການຮັກສາຄວາມສະອາດໃນໂຮງຮຽນ.",
+      "2. ຄວາມຮັບຜິດຊອບໃນການຄຸ້ມຄອງ": "ຍົກລະດັບຄວາມຮັບຜິດຊອບໃນການຄຸ້ມຄອງ ໂດຍສະເພາະການຊຸກຍູ້ເດັກເຂົ້າຮຽນ, ການຮ່ວມມືກັບຊຸມຊົນ ແລະ ຄພສບ.",
+      "3. ຄວາມຮັບຜິດຊອບໃນການສອນ": "ປັບປຸງດ້ານຄວາມຮັບຜິດຊອບໃນການສອນ ກ່ຽວກັບການກວດກິດຈະກຳ, ການຊ່ວຍເຫຼືອນັກຮຽນອ່ອນ ແລະ ການລາຍງານຜົນການຮຽນໃຫ້ພໍ່ແມ່ຮັບຮູ້.",
+      "1. ພາສາລາວ": "ປັບປຸງການຮຽນດ້ານພາສາລາວກ່ຽວກັບ ການອ່ານຕົວອັກສອນ, ສະຫຼະ ຂອງນັກຮຽນ ປ.1 ແລະ ການອ່ານປະໂຫຍກ, ຂໍ້ຄວາມ ແລະ ບົດເລື່ອງສັ້ນ ຂອງນັກຮຽນ ປ.3-ປ.5.",
+      "2. ຄະນິດສາດ": "ປັບປຸງການຮຽນດ້ານຄະນິດສາດກ່ຽວກັບ ການຈຳແນກຈຳນວນ 2 ຕົວເລກຂອງນັກຮຽນ ປ.1 ແລະ ການບວກ, ລົບ, ຄູນ ແລະ ຫານເລກ ຂອງນັກຮຽນ ປ.2-ປ.5."
+  };
+
+  let focusHtml = '<div class="mb-3 text-gray-800 font-bold">ສະນັ້ນ, ເມື່ອສັງລວມວຽກຈຸດສຸມ ມຄພ ທັງ 3 ພາກ ຈະໄດ້ ດັ່ງນີ້:</div>';
+  
+  scores.forEach((s, i) => { 
+      let summaryText = autoSummaryMap[s.aspect] || `ປັບປຸງ ແລະ ພັດທະນາວຽກງານໃນດ້ານ ${s.aspect}`;
+      focusHtml += `<div class="mb-3 p-3 border rounded leading-relaxed bg-white shadow-sm">
+          <span class="font-bold text-blue-800">ວຽກຈຸດສຸມ ${i + 1}:</span> ${summaryText}
+      </div>`; 
+  });
+  
+  document.getElementById('rptFocusList').innerHTML = focusHtml;
   document.getElementById('rptTarget').innerText = state.planTarget + '%';
   document.getElementById('rptDiff').innerText = (state.planTarget - total).toFixed(2) + '%';
 }
