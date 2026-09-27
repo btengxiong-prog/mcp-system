@@ -60,8 +60,20 @@
   .section-title { font-size: 18px; font-weight: 700; color: #1e40af; margin: 20px 0 10px; padding-bottom: 8px; border-bottom: 2px solid #dbeafe; }
   @media print {
     .no-print { display: none !important; }
-    body { background: white; }
-    .card { box-shadow: none; border: 1px solid #ccc; }
+    body, html { background: white; height: auto !important; overflow: visible !important; }
+    
+    /* ປົດລັອກຄວາມສູງ ແລະ Scroll ຂອງໂຄງສ້າງຫຼັກ ເພື່ອໃຫ້ພິມໄດ້ຫຼາຍໜ້າຈ້ຽຍ */
+    #appScreen, main { height: auto !important; overflow: visible !important; display: block !important; position: static !important; }
+    
+    /* ເຊື່ອງແຖບເມນູດ້ານຂ້າງ ແລະ ດ້ານເທິງໃນເວລາພິມ */
+    #sidebar, .md\:hidden, #mobileOverlay { display: none !important; }
+    
+    .card { box-shadow: none; border: none !important; }
+    
+    /* ປ້ອງກັນການຕັດໜ້າເຄິ່ງກາງຕາຕະລາງ */
+    table { page-break-inside: auto; }
+    tr { page-break-inside: avoid; page-break-after: auto; }
+    h2.section-title { page-break-after: avoid; }
   }
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
