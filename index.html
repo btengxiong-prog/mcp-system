@@ -3214,7 +3214,10 @@ function renderReport() {
   let focusHtml = '<div class="mb-3 text-gray-800 font-bold">ສະນັ້ນ, ເມື່ອສັງລວມວຽກຈຸດສຸມ ມຄພ ທັງ 3 ພາກ ຈະໄດ້ ດັ່ງນີ້:</div>';
   
   scores.forEach((s, i) => { 
-      let summaryText = autoSummaryMap[s.aspect] || `ປັບປຸງ ແລະ ພັດທະນາວຽກງານໃນດ້ານ ${s.aspect}`;
+      // ກວດເບິ່ງວ່າຜູ້ໃຊ້ໄດ້ພິມແກ້ໄຂຊື່ວຽກຈຸດສຸມເອງແລ້ວຫຼືບໍ່
+      let customFocus = (state.focusAreas && state.focusAreas[i] && state.focusAreas[i].title) ? state.focusAreas[i].title : null;
+      let summaryText = customFocus || autoSummaryMap[s.aspect] || `ປັບປຸງ ແລະ ພັດທະນາວຽກງານໃນດ້ານ ${s.aspect}`;
+      
       focusHtml += `<div class="mb-3 p-3 border rounded leading-relaxed bg-white shadow-sm">
           <span class="font-bold text-blue-800">ວຽກຈຸດສຸມ ${i + 1}:</span> ${summaryText}
       </div>`; 
@@ -3244,20 +3247,6 @@ function renderReport() {
           </thead>
           <tbody>`;
           
-      // ຂໍ້ມູນແນະນຳກິດຈະກຳອັດຕະໂນມັດ (ໃຊ້ສະເພາະໃນໜ້າລາຍງານ ບໍ່ກ່ຽວຂ້ອງກັບໜ້າແຜນພັດທະນາ)
-      const activityMap = {
-          "1. ໂຄງລ່າງພື້ນຖານ": { name: "ສ້ອມແປງ/ປັບປຸງໂຄງລ່າງພື້ນຖານ, ຫ້ອງນ້ຳ ແລະ ລະບົບນ້ຳໃຊ້ໃນໂຮງຮຽນ", code: "101, 103", budget: "500,000", source: "ເງິນບໍລິຫານ/ຊຸມຊົນ", time: "ກ່ອນເປີດສົກຮຽນ", responsible: "ຜອ/ຊຸມຊົນ" },
-          "2. ອຸປະກອນໃນຫ້ອງຮຽນ": { name: "ຈັດຊື້/ສ້ອມແປງ ໂຕະ, ຕັ່ງນັ່ງນັກຮຽນ ແລະ ກະດານດຳ ໃຫ້ພຽງພໍ", code: "106, 107", budget: "300,000", source: "ເງິນບໍລິຫານ", time: "ກ່ອນເປີດສົກຮຽນ", responsible: "ຜອ/ຄູປະຈຳຫ້ອງ" },
-          "3. ປຶ້ມແບບຮຽນ ແລະ ຄູ່ມືຄູ": { name: "ເຮັດໜັງສືສະເໜີຂໍ ຫຼື ຈັດຊື້ ປຶ້ມແບບຮຽນ ແລະ ຄູ່ມືຄູ", code: "111, 114", budget: "200,000", source: "ສຶກສາເມືອງ", time: "ເດືອນ 9", responsible: "ຜອ/ວິຊາການ" },
-          "4. ອຸປະກອນ ແລະ ສື່ການສອນ": { name: "ຜະລິດສື່ການສອນດ້ວຍວັດສະດຸທ້ອງຖິ່ນ ແລະ ຊື້ອຸປະກອນຄະນິດສາດ", code: "117", budget: "150,000", source: "ເງິນບໍລິຫານ", time: "ເດືອນ 9-10", responsible: "ຜອ/ຄູປະຈຳຫ້ອງ" },
-          "5. ບຸກຄະລາກອນ ແລະ ຂໍ້ມູນຂ່າວສານ": { name: "ປັບປຸງການບັນທຶກສະຖິຕິ ແລະ ເຮັດບັນຊີລາຍຮັບ-ລາຍຈ່າຍຢ່າງຊັດເຈນ", code: "121, 122", budget: "50,000", source: "ເງິນບໍລິຫານ", time: "ຕະຫຼອດສົກຮຽນ", responsible: "ຜອ/ຜູ້ເຮັດບັນຊີ" },
-          "1. ທັດສະນະຄະຕິ": { name: "ຕັດຕັ້ງປະຕິບັດໂມງເວລາເຂັ້ມງວດ, ຈັດເວນອະນາໄມ ແລະ ສ້າງສວນຜັກ", code: "202, 204", budget: "50,000", source: "ເງິນບໍລິຫານ", time: "ຕະຫຼອດສົກຮຽນ", responsible: "ຜອ/ຄູ/ນັກຮຽນ" },
-          "2. ຄວາມຮັບຜິດຊອບໃນການຄຸ້ມຄອງ": { name: "ປະຊຸມ ຄພສບ, ລົງເກັບກຳສະຖິຕິ ແລະ ລະດົມເດັກເຂົ້າຮຽນ", code: "206, 211", budget: "50,000", source: "ເງິນບໍລິຫານ", time: "ເດືອນ 8 / ທ້າຍພາກ", responsible: "ຜອ/ຄພສບ" },
-          "3. ຄວາມຮັບຜິດຊອບໃນການສອນ": { name: "ສອນບຳລຸງນັກຮຽນອ່ອນ, ກວດບົດຮຽນເປັນປະຈຳ ແລະ ລາຍງານຜູ້ປົກຄອງ", code: "215, 216", budget: "0", source: "-", time: "ຕະຫຼອດສົກຮຽນ", responsible: "ຄູປະຈຳຫ້ອງ" },
-          "1. ພາສາລາວ": { name: "ຝຶກທັກສະການອ່ານພາສາລາວ (ພະຍັນຊະນະ, ສະຫຼະ, ປະໂຫຍກ, ບົດເລື່ອງ)", code: "301-305", budget: "0", source: "-", time: "ຕະຫຼອດສົກຮຽນ", responsible: "ຄູປະຈຳຫ້ອງ" },
-          "2. ຄະນິດສາດ": { name: "ຝຶກທັກສະການຄິດໄລ່ (ບວກ, ລົບ, ຄູນ, ຫານ) ແລະ ການຈຳແນກຈຳນວນ", code: "306-310", budget: "0", source: "-", time: "ຕະຫຼອດສົກຮຽນ", responsible: "ຄູປະຈຳຫ້ອງ" }
-      };
-
       // ດຶງຂໍ້ມູນວຽກຈຸດສຸມທັງໝົດ ມາສະແດງໃນຕາຕະລາງ ໃຫ້ກົງກັບຂໍ້ IV
       const topScoresForTable = calcAspectScores().sort((a, b) => a.score - b.score).slice(0, 5);
 
@@ -3265,7 +3254,9 @@ function renderReport() {
            actHtml += `<tr><td colspan="7" class="border border-gray-400 p-4 text-center text-gray-500 italic bg-white">ຍັງບໍ່ມີຂໍ້ມູນການປະເມີນ</td></tr>`;
       } else {
           topScoresForTable.forEach((s, idx) => {
-              let focusText = autoSummaryMap[s.aspect] || `ປັບປຸງ ແລະ ພັດທະນາວຽກງານໃນດ້ານ ${s.aspect}`;
+              // ໃຊ້ຂໍ້ຄວາມວຽກຈຸດສຸມຈາກການແກ້ໄຂຂອງຜູ້ໃຊ້ (ຖ້າມີ) ຫຼື ໃຊ້ autoSummaryMap ເປັນຄ່າເລີ່ມຕົ້ນ
+              let customFocus = (state.focusAreas && state.focusAreas[idx] && state.focusAreas[idx].title) ? state.focusAreas[idx].title : null;
+              let focusText = customFocus || autoSummaryMap[s.aspect] || `ປັບປຸງ ແລະ ພັດທະນາວຽກງານໃນດ້ານ ${s.aspect}`;
               
               // ແຖວຫົວຂໍ້ວຽກຈຸດສຸມ 1 - 5
               actHtml += `<tr>
@@ -3274,21 +3265,41 @@ function renderReport() {
                   </td>
               </tr>`;
               
-              // ດຶງກິດຈະກຳແນະນຳມາໃສ່ໂລດ ໂດຍບໍ່ຕ້ອງສົນໃຈ state.activities
-              let suggestion = activityMap[s.aspect];
+              // ດຶງກິດຈະກຳຕົວຈິງທີ່ຜູ້ໃຊ້ແກ້ໄຂໃນໜ້າ "ແຜນພັດທະນາ" (state.activities) ມາສະແດງ
+              let userActivity = (state.activities && state.activities[idx]) ? state.activities[idx] : null;
               
-              if (suggestion) {
+              if (userActivity) {
+                  // ແປງຕົວເລກງົບປະມານໃຫ້ມີຈຸດ (comma) ຖ້າເປັນຕົວເລກ
+                  let formattedBudget = userActivity.budget ? (isNaN(Number(userActivity.budget)) ? userActivity.budget : Number(userActivity.budget).toLocaleString()) : '0';
+                  
                   actHtml += `<tr>
                       <td class="border border-gray-400 p-2 text-center align-top">1</td>
-                      <td class="border border-gray-400 p-2 text-left align-top leading-relaxed">${suggestion.name}</td>
-                      <td class="border border-gray-400 p-2 text-center align-top">${suggestion.code}</td>
-                      <td class="border border-gray-400 p-2 text-right align-top whitespace-nowrap text-blue-700">${suggestion.budget}</td>
-                      <td class="border border-gray-400 p-2 text-center align-top">${suggestion.source}</td>
-                      <td class="border border-gray-400 p-2 text-center align-top">${suggestion.time}</td>
-                      <td class="border border-gray-400 p-2 text-center align-top">${suggestion.responsible}</td>
+                      <td class="border border-gray-400 p-2 text-left align-top leading-relaxed">${userActivity.name || '-'}</td>
+                      <td class="border border-gray-400 p-2 text-center align-top">${userActivity.code || '-'}</td>
+                      <td class="border border-gray-400 p-2 text-right align-top whitespace-nowrap text-blue-700">${formattedBudget}</td>
+                      <td class="border border-gray-400 p-2 text-center align-top">${userActivity.source || '-'}</td>
+                      <td class="border border-gray-400 p-2 text-center align-top">${userActivity.time || '-'}</td>
+                      <td class="border border-gray-400 p-2 text-center align-top">${userActivity.responsible || '-'}</td>
                   </tr>`;
               } else {
-                  actHtml += `<tr><td colspan="7" class="border border-gray-400 p-2 text-center text-gray-400 italic bg-white text-xs">ຍັງບໍ່ມີກິດຈະກຳແນະນຳສຳລັບດ້ານນີ້</td></tr>`;
+                  actHtml += `<tr><td colspan="7" class="border border-gray-400 p-2 text-center text-gray-400 italic bg-white text-xs">ຍັງບໍ່ມີກິດຈະກຳ (ກະລຸນາເພີ່ມໃນໜ້າແຜນພັດທະນາ)</td></tr>`;
+              }
+              
+              // ກໍລະນີຜູ້ໃຊ້ເພີ່ມກິດຈະກຳຫຼາຍກວ່າ 5 ຢ່າງ, ໃຫ້ເອົາກິດຈະກຳທີ່ເຫຼືອມາສະແດງຕໍ່ທ້າຍວຽກຈຸດສຸມສຸດທ້າຍ
+              if (idx === topScoresForTable.length - 1 && state.activities && state.activities.length > topScoresForTable.length) {
+                  for (let extraIdx = topScoresForTable.length; extraIdx < state.activities.length; extraIdx++) {
+                      let extraActivity = state.activities[extraIdx];
+                      let formattedBudgetExtra = extraActivity.budget ? (isNaN(Number(extraActivity.budget)) ? extraActivity.budget : Number(extraActivity.budget).toLocaleString()) : '0';
+                      actHtml += `<tr>
+                          <td class="border border-gray-400 p-2 text-center align-top">${extraIdx - idx + 1}</td>
+                          <td class="border border-gray-400 p-2 text-left align-top leading-relaxed">${extraActivity.name || '-'}</td>
+                          <td class="border border-gray-400 p-2 text-center align-top">${extraActivity.code || '-'}</td>
+                          <td class="border border-gray-400 p-2 text-right align-top whitespace-nowrap text-blue-700">${formattedBudgetExtra}</td>
+                          <td class="border border-gray-400 p-2 text-center align-top">${extraActivity.source || '-'}</td>
+                          <td class="border border-gray-400 p-2 text-center align-top">${extraActivity.time || '-'}</td>
+                          <td class="border border-gray-400 p-2 text-center align-top">${extraActivity.responsible || '-'}</td>
+                      </tr>`;
+                  }
               }
           });
       }
