@@ -3186,37 +3186,61 @@ function renderReport() {
       const planCat = getCategory(state.planTarget, currentLevel);
       document.getElementById('rptPlanCategory').innerHTML = `<span class="badge ${planCat.cls}">${planCat.label}</span>`;
 
-      // ສ້າງຕາຕະລາງກິດຈະກຳ
-      let actHtml = '';
-      if (!state.activities || state.activities.length === 0) {
-          actHtml = '<p class="text-gray-500 italic text-center py-4 border border-gray-300 bg-gray-50">ຍັງບໍ່ມີຂໍ້ມູນກິດຈະກຳ. ກະລຸນາເພີ່ມໃນໜ້າແຜນພັດທະນາ.</p>';
-      } else {
-          actHtml = `<table class="w-full border-collapse border border-gray-400 text-sm">
-              <thead class="bg-gray-100">
-                  <tr>
-                      <th class="border border-gray-400 p-2 w-12 text-center">ລ/ດ</th>
-                      <th class="border border-gray-400 p-2 text-left">ກິດຈະກຳ</th>
-                      <th class="border border-gray-400 p-2 text-center">ລະຫັດ ຕຊວ</th>
-                      <th class="border border-gray-400 p-2 text-right">ງົບປະມານ</th>
-                      <th class="border border-gray-400 p-2 text-center">ແຫຼ່ງງົບ</th>
-                      <th class="border border-gray-400 p-2 text-center">ໄລຍະເວລາ</th>
-                      <th class="border border-gray-400 p-2 text-center">ຜູ້ຮັບຜິດຊອບ</th>
-                  </tr>
-              </thead>
-              <tbody>`;
-          state.activities.forEach((a, i) => {
-              actHtml += `<tr>
-                  <td class="border border-gray-400 p-2 text-center">${i + 1}</td>
-                  <td class="border border-gray-400 p-2 font-semibold">${a.name || '-'}</td>
-                  <td class="border border-gray-400 p-2 text-center">${a.code || '-'}</td>
-                  <td class="border border-gray-400 p-2 text-right text-blue-700">${a.budget ? Number(a.budget).toLocaleString() + ' ₭' : '-'}</td>
-                  <td class="border border-gray-400 p-2 text-center">${a.source || '-'}</td>
-                  <td class="border border-gray-400 p-2 text-center">${a.time || '-'}</td>
-                  <td class="border border-gray-400 p-2 text-center">${a.responsible || '-'}</td>
-              </tr>`;
-          });
-          actHtml += `</tbody></table>`;
+      // ສ້າງຕາຕະລາງກິດຈະກຳ ໃຫ້ສະແດງຫົວຕາຕະລາງສະເໝີ
+      let actHtml = `<table class="w-full border-collapse border border-gray-400 text-sm">
+          <thead class="bg-gray-100">
+              <tr>
+                  <th class="border border-gray-400 p-2 w-10 text-center leading-tight">ລ/ດ</th>
+                  <th class="border border-gray-400 p-2 text-center leading-tight">ກິດຈະກຳ</th>
+                  <th class="border border-gray-400 p-2 text-center leading-tight">ລະຫັດ<br>ຕົວຊີ້ວັດ</th>
+                  <th class="border border-gray-400 p-2 text-center leading-tight">ງົບ<br>ປະມານ</th>
+                  <th class="border border-gray-400 p-2 text-center leading-tight">ແຫຼ່ງ<br>ງົບປະມານ</th>
+                  <th class="border border-gray-400 p-2 text-center leading-tight">ໄລຍະ<br>ເວລາ</th>
+                  <th class="border border-gray-400 p-2 text-center leading-tight">ຜູ້ຮັບ<br>ຜິດຊອບ</th>
+              </tr>
+          </thead>
+          <tbody>`;
+          
+      // ດຶງຂໍ້ມູນວຽກຈຸດສຸມທັງໝົດ ມາສະແດງໃນຕາຕະລາງ ໃຫ້ກົງກັບຂໍ້ IV
+      const topScoresForTable = calcAspectScores().sort((a, b) => a.score - b.score).slice(0, 5);
+      let focusListForTable = topScoresForTable.map(s => autoSummaryMap[s.aspect] || `ປັບປຸງ ແລະ ພັດທະນາວຽກງານໃນດ້ານ ${s.aspect}`);
+      
+      if (focusListForTable.length === 0) {
+          focusListForTable.push("ປັບປຸງຄຸນນະພາບການສຶກສາລວມ");
       }
+
+      focusListForTable.forEach((focusText, idx) => {
+          // ແຖວຫົວຂໍ້ວຽກຈຸດສຸມ 1 - 5
+          actHtml += `<tr>
+              <td colspan="7" class="border border-gray-400 p-2 text-left bg-gray-50">
+                  <span class="font-bold text-base text-blue-900">ວຽກຈຸດສຸມ ${idx + 1}:</span> <span class="text-base">${focusText}</span>
+              </td>
+          </tr>`;
+          
+          // ແຖວກິດຈະກຳ: ເນື່ອງຈາກປັດຈຸບັນຍັງບໍ່ມີການແຍກກິດຈະກຳຕາມວຽກຈຸດສຸມ ເຮົາຈະເອົາທັງໝົດໄປສະແດງໃນວຽກຈຸດສຸມ 1 ກ່ອນ
+          if (idx === 0) {
+              if (!state.activities || state.activities.length === 0) {
+                  actHtml += `<tr><td colspan="7" class="border border-gray-400 p-4 text-center text-gray-500 italic bg-white">ຍັງບໍ່ມີຂໍ້ມູນກິດຈະກຳ. ກະລຸນາເພີ່ມໃນໜ້າແຜນພັດທະນາ.</td></tr>`;
+              } else {
+                  state.activities.forEach((a, i) => {
+                      actHtml += `<tr>
+                          <td class="border border-gray-400 p-2 text-center align-top">${i + 1}</td>
+                          <td class="border border-gray-400 p-2 text-left align-top leading-relaxed">${a.name || '-'}</td>
+                          <td class="border border-gray-400 p-2 text-center align-top">${a.code || '-'}</td>
+                          <td class="border border-gray-400 p-2 text-center align-top whitespace-nowrap">${a.budget ? Number(a.budget).toLocaleString() : '-'}</td>
+                          <td class="border border-gray-400 p-2 text-center align-top">${a.source || '-'}</td>
+                          <td class="border border-gray-400 p-2 text-center align-top">${a.time || '-'}</td>
+                          <td class="border border-gray-400 p-2 text-center align-top">${a.responsible || '-'}</td>
+                      </tr>`;
+                  });
+              }
+          } else {
+              // ສຳລັບວຽກຈຸດສຸມ 2,3,4,5 ທີ່ຍັງບໍ່ມີກິດຈະກຳ ໃຫ້ສະແດງຊ່ອງວ່າງໄວ້ (ຄືກັບແບບຟອມມາດຕະຖານ)
+              actHtml += `<tr><td colspan="7" class="border border-gray-400 p-2 text-center text-gray-400 italic bg-white text-xs">ຍັງບໍ່ມີກິດຈະກຳ</td></tr>`;
+          }
+      });
+
+      actHtml += `</tbody></table>`;
       document.getElementById('rptActivityList').innerHTML = actHtml;
     }
 
