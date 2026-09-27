@@ -446,14 +446,17 @@
           <div class="flex justify-between items-center"><span class="font-bold text-lg">ອັດຕາ ມຄພ ໂຮງຮຽນລວມ:</span><span id="rptTotal" class="text-3xl font-bold text-blue-700">0%</span></div>
           <div class="flex justify-between items-center mt-2"><span class="font-bold">ປະເພດໂຮງຮຽນ:</span><span id="rptCategory" class="badge badge-yellow text-lg px-4 py-1">-</span></div>
         </div>
-        <h2 class="section-title">II. ບູລິມະສິດ ແລະ ວຽກຈຸດສຸມ</h2>
+        <h2 class="section-title">II. ລາຍລະອຽດການປະເມີນ ພາກທີ I: ປັດໄຈນຳເຂົ້າ</h2>
+        <div id="rptDetailedPart1" class="mb-4 overflow-x-auto bg-white"></div>
+
+        <h2 class="section-title">III. ບູລິມະສິດ ແລະ ວຽກຈຸດສຸມ</h2>
         <table class="mb-4">
           <thead><tr><th>ອັນດັບ</th><th>ພາກ</th><th>ດ້ານ</th><th>ອັດຕາ</th></tr></thead>
           <tbody id="rptPriorityTable"></tbody>
         </table>
-        <h2 class="section-title">III. ວຽກຈຸດສຸມ ແລະ ກິດຈະກຳ</h2>
+        <h2 class="section-title">IV. ວຽກຈຸດສຸມ ແລະ ກິດຈະກຳ</h2>
         <div id="rptFocusList"></div>
-        <h2 class="section-title">IV. ຄາດໝາຍ</h2>
+        <h2 class="section-title">V. ຄາດໝາຍ</h2>
         <p>ອັດຕາ ມຄພ ຄາດໝາຍ: <b id="rptTarget">-</b> (ເພີ່ມຂຶ້ນ <b id="rptDiff">-</b>)</p>
         <div class="grid grid-cols-2 gap-8 mt-12 text-center">
           <div><div class="font-bold">ປະທານ ຄະນະພັດທະນາການສຶກສາຂັ້ນບ້ານ</div><div class="mt-16 text-gray-400">...........................................</div></div>
@@ -1547,36 +1550,82 @@ function renderPartForm(partNum, containerId) {
   const container = document.getElementById(containerId);
   if (!container) return; 
 
-  let html = '';
+  let html = `
+  <div class="card overflow-x-auto mb-4 bg-white shadow-sm rounded-xl">
+    <table class="w-full border-collapse border border-gray-300 min-w-[800px]">
+      <thead class="bg-gray-100 sticky top-0 z-10 shadow-sm border-b-2 border-gray-300">
+        <tr>
+          <th rowspan="2" class="border border-gray-300 p-3 w-14 text-center text-gray-800">ດ້ານ</th>
+          <th rowspan="2" class="border border-gray-300 p-3 w-16 text-center text-gray-800">ລະຫັດ</th>
+          <th rowspan="2" class="border border-gray-300 p-3 text-center text-gray-800">ຕົວຊີ້ວັດ</th>
+          <th colspan="3" class="border border-gray-300 p-2 text-center text-gray-800">ເກນການປະເມີນ</th>
+        </tr>
+        <tr class="bg-gray-50">
+          <th class="border border-gray-300 p-2 text-center w-24 text-sm font-bold text-gray-700">ຜ່ານເກນ<br><span class="text-xs text-green-600">(100%)</span></th>
+          <th class="border border-gray-300 p-2 text-center w-24 text-sm font-bold text-gray-700">ປັບປຸງໜ້ອຍ<br><span class="text-xs text-yellow-600">(50%)</span></th>
+          <th class="border border-gray-300 p-2 text-center w-24 text-sm font-bold text-gray-700">ປັບປຸງຫຼາຍ<br><span class="text-xs text-red-600">(0%)</span></th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+
   let indicatorIndex = 0;
 
   data.aspects.forEach((aspect) => {
-    html += `<div class="card p-5 mb-4"><h3 class="section-title">${aspect.name}</h3>`;
-    aspect.indicators.forEach((ind) => {
+    let cleanAspectName = aspect.name.replace(/^\d+\.\s*/, ''); 
+
+    aspect.indicators.forEach((ind, iIndex) => {
       const idx = indicatorIndex++;
       const pData = (state && state['part' + partNum]) ? state['part' + partNum] : {};
       const savedValue = pData[idx] !== undefined ? pData[idx] : (pData[String(idx)] || '');
 
-      html += `<div class="py-2 border-b flex flex-col md:flex-row md:items-center gap-2">
-        <div class="flex-1 text-sm">${ind}</div>
-        <div class="radio-group">
-          <label class="radio-green">
-            <input type="radio" name="p${partNum}_${idx}" value="pass" ${savedValue === 'pass' ? 'checked="checked"' : ''} onchange="setPart(${partNum}, ${idx}, 'pass')">
-            <span>✓ ຜ່ານເກນ (100%)</span>
+      // ປ່ຽນການສ້າງລະຫັດເປັນ 101, 102... (ສຳລັບພາກ 1) ແລະ 201, 202... (ສຳລັບພາກ 2)
+      let indCode = (partNum * 100) + (idx + 1);
+      let indText = ind.replace(/^\d+\.\s*/, '').trim();
+
+      html += `<tr class="hover:bg-blue-50 transition duration-150">`;
+      
+      if (iIndex === 0) {
+        html += `<td rowspan="${aspect.indicators.length}" class="border border-gray-300 text-center font-bold text-blue-900 bg-blue-50/50" style="writing-mode: vertical-rl; transform: rotate(180deg); padding: 15px 10px; width: 40px;">${cleanAspectName}</td>`;
+      }
+
+      // ເຊື່ອງປຸ່ມວົງມົນ (radio) ໃຫ້ເຫຼືອແຕ່ສະແດງໝາຍຕິກ (SVG) ເວລາຖືກເລືອກ
+      html += `
+        <td class="border border-gray-300 text-center font-bold text-gray-700 text-sm">
+          ${indCode}
+        </td>
+        <td class="border border-gray-300 p-3 text-sm leading-relaxed text-gray-700">
+          ${indText}
+        </td>
+        <td class="border border-gray-300 text-center p-0 align-middle hover:bg-green-50 transition-colors">
+          <label class="w-full h-full min-h-[48px] flex items-center justify-center cursor-pointer m-0 relative">
+            <input type="radio" name="p${partNum}_${idx}" value="pass" ${savedValue === 'pass' ? 'checked="checked"' : ''} onchange="setPart(${partNum}, ${idx}, 'pass')" class="peer sr-only">
+            <svg class="w-8 h-8 text-green-600 opacity-0 peer-checked:opacity-100 transition-opacity duration-200 drop-shadow-md" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path>
+            </svg>
           </label>
-          <label class="radio-yellow">
-            <input type="radio" name="p${partNum}_${idx}" value="improve" ${savedValue === 'improve' ? 'checked="checked"' : ''} onchange="setPart(${partNum}, ${idx}, 'improve')">
-            <span>~ ປັບປຸງໜ້ອຍ (50%)</span>
+        </td>
+        <td class="border border-gray-300 text-center p-0 align-middle hover:bg-yellow-50 transition-colors">
+          <label class="w-full h-full min-h-[48px] flex items-center justify-center cursor-pointer m-0 relative">
+            <input type="radio" name="p${partNum}_${idx}" value="improve" ${savedValue === 'improve' ? 'checked="checked"' : ''} onchange="setPart(${partNum}, ${idx}, 'improve')" class="peer sr-only">
+            <svg class="w-8 h-8 text-yellow-500 opacity-0 peer-checked:opacity-100 transition-opacity duration-200 drop-shadow-md" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path>
+            </svg>
           </label>
-          <label class="radio-red">
-            <input type="radio" name="p${partNum}_${idx}" value="fail" ${savedValue === 'fail' ? 'checked="checked"' : ''} onchange="setPart(${partNum}, ${idx}, 'fail')">
-            <span>✗ ປັບປຸງຫຼາຍ (0%)</span>
+        </td>
+        <td class="border border-gray-300 text-center p-0 align-middle hover:bg-red-50 transition-colors">
+          <label class="w-full h-full min-h-[48px] flex items-center justify-center cursor-pointer m-0 relative">
+            <input type="radio" name="p${partNum}_${idx}" value="fail" ${savedValue === 'fail' ? 'checked="checked"' : ''} onchange="setPart(${partNum}, ${idx}, 'fail')" class="peer sr-only">
+            <svg class="w-8 h-8 text-red-600 opacity-0 peer-checked:opacity-100 transition-opacity duration-200 drop-shadow-md" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path>
+            </svg>
           </label>
-        </div>
-      </div>`;
+        </td>
+      </tr>`;
     });
-    html += `</div>`;
   });
+
+  html += `</tbody></table></div>`;
   container.innerHTML = html;
 }
 
@@ -2641,10 +2690,73 @@ function renderReport() {
   document.getElementById('rptTotal').innerText = total.toFixed(2) + '%';
   document.getElementById('rptCategory').innerText = cat.label;
   document.getElementById('rptCategory').className = 'badge ' + cat.cls + ' text-lg px-4 py-1';
-  const scores = calcAspectScores().sort((a, b) => a.score - b.score).slice(0, 5);
-  document.getElementById('rptPriorityTable').innerHTML = scores.map((s, i) => `<tr><td>${i + 1}</td><td>${s.part}</td><td>${s.aspect}</td><td>${s.score.toFixed(2)}%</td></tr>`).join('');
-  
-  // ຊຸດຂໍ້ຄວາມສຳລັບແປງຊື່ດ້ານ ເປັນປະໂຫຍກຈຸດສຸມອັດຕະໂນມັດ
+      
+      // --- ສ້າງຕາຕະລາງລາຍລະອຽດ ພາກທີ 1 ໃຫ້ຄືຄູ່ມື ---
+      let p1Html = `
+      <table class="w-full border-collapse border border-gray-400 text-sm">
+          <thead>
+              <tr class="bg-gray-50">
+                  <th rowspan="2" class="border border-gray-400 p-2 w-12 text-center">ດ້ານ</th>
+                  <th rowspan="2" class="border border-gray-400 p-2 text-center">ຕົວຊີ້ວັດ</th>
+                  <th colspan="3" class="border border-gray-400 p-2 text-center">ເກນການປະເມີນ</th>
+                  <th rowspan="2" class="border border-gray-400 p-2 w-12 text-center">%</th>
+              </tr>
+              <tr class="bg-gray-50">
+                  <th class="border border-gray-400 p-1 text-center w-12 text-xs">ຜ່ານ<br>ເກນ</th>
+                  <th class="border border-gray-400 p-1 text-center w-12 text-xs">ປັບປຸງ<br>ໜ້ອຍ</th>
+                  <th class="border border-gray-400 p-1 text-center w-12 text-xs">ປັບປຸງ<br>ຫຼາຍ</th>
+              </tr>
+          </thead>
+          <tbody>
+      `;
+      let qIndex = 0, totalPass = 0, totalImp1 = 0, totalImp2 = 0, sumScore = 0;
+      MCP_DATA.part1.aspects.forEach((aspect, aIndex) => {
+          let cleanAspectName = aspect.name.replace(/^\d+\.\s*/, '');
+          aspect.indicators.forEach((ind, iIndex) => {
+              let v = state.part1 ? state.part1[qIndex] : null;
+              let checkPass = '', checkImp1 = '', checkImp2 = '', pct = '';
+              
+              if(v === 'pass') { checkPass = '<span class="text-red-600 font-bold">✓</span>'; pct = '100'; totalPass++; sumScore += 100; }
+              else if(v === 'improve') { checkImp1 = '<span class="text-red-600 font-bold">✓</span>'; pct = '50'; totalImp1++; sumScore += 50; }
+              else if(v === 'fail') { checkImp2 = '<span class="text-red-600 font-bold">✓</span>'; pct = '0'; totalImp2++; sumScore += 0; }
+              
+              // ແຍກລະຫັດຕົວຊີ້ວັດອອກມາເນັ້ນຕົວເຂັ້ມ (ເປັນ 101 - 125)
+              let indCode = 100 + (qIndex + 1);
+              let indText = ind.replace(/^\d+\.\s*/, '').trim();
+
+              p1Html += `<tr>`;
+              if (iIndex === 0) {
+                  p1Html += `<td rowspan="${aspect.indicators.length}" class="border border-gray-400 text-center font-bold" style="writing-mode: vertical-rl; transform: rotate(180deg); padding: 10px;">${cleanAspectName}</td>`;
+              }
+              p1Html += `<td class="border border-gray-400 p-2"><span class="font-bold mr-1">${indCode}.</span> ${indText}</td>
+                      <td class="border border-gray-400 text-center text-lg">${checkPass}</td>
+                      <td class="border border-gray-400 text-center text-lg">${checkImp1}</td>
+                      <td class="border border-gray-400 text-center text-lg">${checkImp2}</td>
+                      <td class="border border-gray-400 text-center font-bold text-red-600">${pct}</td>
+              </tr>`;
+              qIndex++;
+          });
+      });
+      let finalPct = qIndex > 0 ? (sumScore / qIndex) : 0;
+      p1Html += `
+          <tr class="bg-gray-100 font-bold">
+              <td colspan="2" class="border border-gray-400 text-center p-2">ລວມ</td>
+              <td class="border border-gray-400 text-center text-red-600 text-lg">${totalPass || ''}</td>
+              <td class="border border-gray-400 text-center text-red-600 text-lg">${totalImp1 || ''}</td>
+              <td class="border border-gray-400 text-center text-red-600 text-lg">${totalImp2 || ''}</td>
+              <td class="border border-gray-400 bg-gray-200"></td>
+          </tr>
+          <tr class="bg-gray-100 font-bold text-base">
+              <td colspan="5" class="border border-gray-400 text-center p-2">ອັດຕາ ມຄພ ພາກທີ I</td>
+              <td class="border border-gray-400 text-center text-red-600">${finalPct.toFixed(2)}%</td>
+          </tr>
+      </tbody></table>`;
+      document.getElementById('rptDetailedPart1').innerHTML = p1Html;
+
+      const scores = calcAspectScores().sort((a, b) => a.score - b.score).slice(0, 5);
+      document.getElementById('rptPriorityTable').innerHTML = scores.map((s, i) => `<tr><td>${i + 1}</td><td>${s.part}</td><td>${s.aspect}</td><td>${s.score.toFixed(2)}%</td></tr>`).join('');
+      
+      // ຊຸດຂໍ້ຄວາມສຳລັບແປງຊື່ດ້ານ ເປັນປະໂຫຍກຈຸດສຸມອັດຕະໂນມັດ
   const autoSummaryMap = {
       "1. ໂຄງລ່າງພື້ນຖານ": "ປັບປຸງດ້ານໂຄງລ່າງພື້ນຖານ ໂດຍສະເພາະການສ້າງສະພາບແວດລ້ອມໂຮງຮຽນໃຫ້ໄດ້ມາດຕະຖານ, ມີນ້ຳໃຊ້ ແລະ ຫ້ອງນ້ຳພຽງພໍ.",
       "2. ອຸປະກອນໃນຫ້ອງຮຽນ": "ປັບປຸງດ້ານອຸປະກອນໃນຫ້ອງຮຽນ ໂດຍສະເພາະກະດານ, ໂຕະ, ຕັ່ງນັ່ງໃຫ້ນັກຮຽນ ແລະ ຄູໃຫ້ພຽງພໍທຸກຫ້ອງຮຽນ.",
