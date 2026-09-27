@@ -313,6 +313,7 @@
           </div>
           <div class="flex gap-2 items-center">
             <select id="part3GradeSelect" onchange="renderPart3Table()" class="px-3 py-2 border rounded-lg bg-white font-semibold">
+              <option value="all_grades">ລວມທຸກຂັ້ນ (ປ.1 - ປ.5)</option>
               <option value="ປ.1">ຂັ້ນ ປ.1</option><option value="ປ.2">ຂັ້ນ ປ.2</option><option value="ປ.3">ຂັ້ນ ປ.3</option><option value="ປ.4">ຂັ້ນ ປ.4</option><option value="ປ.5">ຂັ້ນ ປ.5</option>
             </select>
             <button class="btn btn-danger" onclick="deleteSelectedStudents()">🗑️ ລຶບຂໍ້ມູນ</button>
@@ -376,7 +377,11 @@
         <table class="w-full border-collapse border border-gray-400">
           <thead class="bg-gray-50">
             <tr>
-              <th rowspan="2" class="border border-gray-400 text-center w-16 py-2">ດ້ານ</th><th rowspan="2" class="border border-gray-400 text-center py-2">ຕົວຊີ້ວັດ</th><th colspan="3" class="border border-gray-400 text-center py-1">ເກນການປະເມີນ</th><th rowspan="2" class="border border-gray-400 text-center w-24 py-2">%</th>
+              <th rowspan="2" class="border border-gray-400 text-center w-16 py-2">ດ້ານ</th>
+              <th rowspan="2" class="border border-gray-400 text-center w-16 py-2">ລະຫັດ</th>
+              <th rowspan="2" class="border border-gray-400 text-center py-2">ຕົວຊີ້ວັດ</th>
+              <th colspan="3" class="border border-gray-400 text-center py-1">ເກນການປະເມີນ</th>
+              <th rowspan="2" class="border border-gray-400 text-center w-24 py-2">%</th>
             </tr>
             <tr>
               <th class="border border-gray-400 text-center w-16 text-sm py-1">ຜ່ານ<br>ເກນ</th><th class="border border-gray-400 text-center w-16 text-sm py-1">ປັບປຸງ<br>ໜ້ອຍ</th><th class="border border-gray-400 text-center w-16 text-sm py-1">ປັບປຸງ<br>ຫຼາຍ</th>
@@ -1723,24 +1728,107 @@ function renderPart3Table() {
     const tbody = document.getElementById('part3TableBody');
     if (!tbody) return;
 
-    // ປ້ອງກັນບັນຫາ Firebase ແປງ Array ເປັນ Object ຕອນສະແດງຜົນ
-    if (!studentScores[grade]) {
-        studentScores[grade] = [];
-    } else if (!Array.isArray(studentScores[grade])) {
-        studentScores[grade] = Object.values(studentScores[grade]);
+    // --- ກໍລະນີເລືອກ "ລວມທຸກໂຮງຮຽນ" ຢູ່ໜ້າແດຊບອດ ---
+    if (state.school && state.school.code === 'all_schools') {
+        tbody.innerHTML = `<tr><td colspan="6" class="py-12 text-center font-bold text-blue-600 text-lg">ກຳລັງລວບລວມລາຍຊື່ນັກຮຽນທັງໝົດ... ⏳</td></tr>`;
+        
+        const dCode = document.getElementById('filterDistrict')?.value;
+        const gCode = document.getElementById('filterGroup')?.value;
+        const targetSchools = getTargetSchoolsForDashboard(dCode, gCode);
+        const year = document.getElementById('academicYear')?.value || (new Date().getFullYear() + '-' + (new Date().getFullYear() + 1));
+        
+        db.ref('studentScores').once('value').then(snap => {
+            const allData = snap.val() || {};
+            let combinedList = [];
+            
+            targetSchools.forEach(s => {
+                const key = s.code + '_' + year;
+                if (allData[key]) {
+                    // ກວດສອບວ່າເລືອກ "ລວມທຸກຂັ້ນ" ຫຼື ຂັ້ນດຽວ
+                    const gradesToLoop = grade === 'all_grades' ? ['ປ_1', 'ປ_2', 'ປ_3', 'ປ_4', 'ປ_5'] : [grade.replace('.', '_')];
+                    
+                    gradesToLoop.forEach(safeGrade => {
+                        if (allData[key][safeGrade]) {
+                            const list = Array.isArray(allData[key][safeGrade]) ? allData[key][safeGrade] : Object.values(allData[key][safeGrade]);
+                            list.forEach(st => {
+                                combinedList.push({ ...st, schoolName: s.name, displayGrade: safeGrade.replace('_', '.') });
+                            });
+                        }
+                    });
+                }
+            });
+            
+            if (combinedList.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="py-6 text-center text-gray-500 font-semibold">ຍັງບໍ່ມີລາຍຊື່ນັກຮຽນ ສຳລັບເມືອງ/ກຸ່ມທີ່ເລືອກ</td></tr>`;
+                if(document.getElementById('tableLaoPct')) document.getElementById('tableLaoPct').textContent = '0.00%';
+                if(document.getElementById('tableMathPct')) document.getElementById('tableMathPct').textContent = '0.00%';
+                return;
+            }
+
+            let html = '';
+            let passLao = 0, passMath = 0;
+
+            combinedList.forEach((st, index) => {
+                if (Number(st.lao) === 1) passLao++;
+                if (Number(st.math) === 1) passMath++;
+                
+                // ສະແດງປ້າຍຊື່ຊັ້ນຮຽນ ຖ້າເບິ່ງແບບລວມທຸກຂັ້ນ
+                const gradeText = grade === 'all_grades' ? ` | ຂັ້ນ: <span class="font-bold text-blue-700">${st.displayGrade}</span>` : '';
+
+                html += `<tr class="hover:bg-gray-100 transition duration-150">
+                    <td style="text-align: center;"><input type="checkbox" disabled class="w-4 h-4 cursor-not-allowed accent-gray-400" title="ບໍ່ສາມາດລຶບໃນໂໝດສັງລວມໄດ້"></td>
+                    <td style="text-align: center; color: #6b7280; font-weight: bold;">${index + 1}</td>
+                    <td class="name-cell font-bold text-gray-800" style="padding: 12px 10px;">
+                        ${st.name} <br><span class="text-xs text-blue-600 font-normal">🏫 ໂຮງຮຽນ: ${st.schoolName}${gradeText}</span>
+                    </td>
+                    <td style="text-align: center; font-bold text-gray-800" style="padding: 12px 10px;">${st.lao}</td>
+                    <td style="text-align: center; font-bold text-gray-800" style="padding: 12px 10px;">${st.math}</td>
+                    <td style="text-align: center; padding: 6px;">
+                        <button class="btn bg-gray-200 text-gray-400 cursor-not-allowed shadow-sm" style="padding: 5px 12px; font-size: 12px;" title="ບໍ່ສາມາດແກ້ໄຂໃນໂໝດສັງລວມໄດ້">✏️ ແກ້ໄຂ</button>
+                    </td>
+                </tr>`;
+            });
+            tbody.innerHTML = html;
+
+            let pctLao = ((passLao / combinedList.length) * 100).toFixed(2) + '%';
+            let pctMath = ((passMath / combinedList.length) * 100).toFixed(2) + '%';
+            if(document.getElementById('tableLaoPct')) document.getElementById('tableLaoPct').textContent = pctLao;
+            if(document.getElementById('tableMathPct')) document.getElementById('tableMathPct').textContent = pctMath;
+        });
+        return;
     }
 
-    const list = studentScores[grade];
+    // --- ສຳລັບໂຮງຮຽນດຽວ (Single School Mode) ---
+    let list = [];
+    if (grade === 'all_grades') {
+        // ລວບລວມເອົານັກຮຽນທັງໝົດ ປ.1 - ປ.5
+        ['ປ.1', 'ປ.2', 'ປ.3', 'ປ.4', 'ປ.5'].forEach(g => {
+            if (studentScores[g]) {
+                const gList = Array.isArray(studentScores[g]) ? studentScores[g] : Object.values(studentScores[g]);
+                gList.forEach(st => list.push({ ...st, actualGrade: g }));
+            }
+        });
+    } else {
+        if (!studentScores[grade]) {
+            studentScores[grade] = [];
+        } else if (!Array.isArray(studentScores[grade])) {
+            studentScores[grade] = Object.values(studentScores[grade]);
+        }
+        list = studentScores[grade].map(st => ({ ...st, actualGrade: grade }));
+    }
+
     if (list.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="py-6 text-center text-gray-500 font-semibold">ຍັງບໍ່ມີລາຍຊື່ນັກຮຽນໃນຊັ້ນນີ້ ກະລຸນາກົດ "+ ເພີ່ມຊື່ນັກຮຽນ"</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="py-6 text-center text-gray-500 font-semibold">ຍັງບໍ່ມີລາຍຊື່ນັກຮຽນ ກະລຸນາກົດ "+ ເພີ່ມຊື່ນັກຮຽນ"</td></tr>`;
         calculatePart3Summary(grade);
         return;
     }
     
     let html = '';
     list.forEach((st, index) => {
+        const actualGrade = st.actualGrade; // ເກັບຊັ້ນທີ່ແທ້ຈິງເພື່ອໃຊ້ໃນການແກ້ໄຂ
+        const gradeBadge = grade === 'all_grades' ? `<span class="ml-2 px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">${actualGrade}</span>` : '';
+
         if (editingStudentId === st.id) {
-            // ----- ໂໝດແກ້ໄຂ (Edit Mode) -----
             html += `<tr class="bg-blue-50">
                 <td style="text-align: center;"><input type="checkbox" class="student-checkbox w-4 h-4 cursor-pointer accent-blue-600" value="${st.id}"></td>
                 <td style="text-align: center; font-weight: bold;">${index + 1}</td>
@@ -1748,16 +1836,15 @@ function renderPart3Table() {
                 <td style="text-align: center;"><input type="number" min="0" max="1" id="edit_lao_${st.id}" value="${st.lao}" class="score-input w-16 px-2 py-1.5 border-2 border-blue-400 rounded text-center font-bold outline-none focus:ring-2 focus:ring-blue-600" onkeydown="handleScoreNavigation(event, this)"></td>
                 <td style="text-align: center;"><input type="number" min="0" max="1" id="edit_math_${st.id}" value="${st.math}" class="score-input w-16 px-2 py-1.5 border-2 border-blue-400 rounded text-center font-bold outline-none focus:ring-2 focus:ring-blue-600" onkeydown="handleScoreNavigation(event, this)"></td>
                 <td style="text-align: center; width: 100px; padding: 6px;">
-                    <button class="btn btn-success shadow-sm mb-1" style="padding: 4px 8px; font-size: 12px; width: 100%;" onclick="saveEditStudent('${grade}', '${st.id}')">💾 ບັນທຶກ</button>
+                    <button class="btn btn-success shadow-sm mb-1" style="padding: 4px 8px; font-size: 12px; width: 100%;" onclick="saveEditStudent('${actualGrade}', '${st.id}')">💾 ບັນທຶກ</button>
                     <button class="btn bg-gray-200 hover:bg-gray-300 text-gray-800 shadow-sm" style="padding: 4px 8px; font-size: 12px; width: 100%; font-weight: bold;" onclick="cancelEditStudent()">✕ ຍົກເລີກ</button>
                 </td>
             </tr>`;
         } else {
-            // ----- ໂໝດສະແດງຜົນ (View Mode / ລັອກການແກ້ໄຂ) -----
             html += `<tr class="hover:bg-gray-100 transition duration-150">
                 <td style="text-align: center;"><input type="checkbox" class="student-checkbox w-4 h-4 cursor-pointer accent-blue-600" value="${st.id}"></td>
                 <td style="text-align: center; color: #6b7280;">${index + 1}</td>
-                <td class="name-cell font-bold text-gray-800" style="padding: 12px 10px;">${st.name}</td>
+                <td class="name-cell font-bold text-gray-800" style="padding: 12px 10px;">${st.name} ${gradeBadge}</td>
                 <td style="text-align: center; font-bold text-gray-800" style="padding: 12px 10px;">${st.lao}</td>
                 <td style="text-align: center; font-bold text-gray-800" style="padding: 12px 10px;">${st.math}</td>
                 <td style="text-align: center; padding: 6px;">
@@ -2038,7 +2125,17 @@ function deleteSelectedStudents() {
     
     showConfirm(`ທ່ານຕ້ອງການລຶບລາຍຊື່ນັກຮຽນທີ່ເລືອກທັງໝົດ ${checkboxes.length} ຄົນ ແທ້ບໍ?`, () => {
         const idsToDelete = Array.from(checkboxes).map(cb => cb.value);
-        studentScores[grade] = studentScores[grade].filter(st => !idsToDelete.includes(st.id));
+        
+        if (grade === 'all_grades') {
+             ['ປ.1', 'ປ.2', 'ປ.3', 'ປ.4', 'ປ.5'].forEach(g => {
+                  if (studentScores[g]) {
+                      studentScores[g] = studentScores[g].filter(st => !idsToDelete.includes(st.id));
+                  }
+             });
+        } else {
+             studentScores[grade] = studentScores[grade].filter(st => !idsToDelete.includes(st.id));
+        }
+        
         saveStudentScores();
         renderPart3Table();
         
@@ -2050,7 +2147,17 @@ function deleteSelectedStudents() {
 }
 
 function calculatePart3Summary(grade) {
-    const list = studentScores[grade] || [];
+    let list = [];
+    if (grade === 'all_grades') {
+        ['ປ.1', 'ປ.2', 'ປ.3', 'ປ.4', 'ປ.5'].forEach(g => {
+            const gList = studentScores[g] || [];
+            list = list.concat(Array.isArray(gList) ? gList : Object.values(gList));
+        });
+    } else {
+        const gList = studentScores[grade] || [];
+        list = Array.isArray(gList) ? gList : Object.values(gList);
+    }
+    
     if (list.length === 0) {
         if (document.getElementById('tableLaoPct')) document.getElementById('tableLaoPct').textContent = '0.00%';
         if (document.getElementById('tableMathPct')) document.getElementById('tableMathPct').textContent = '0.00%';
@@ -2068,9 +2175,16 @@ function renderSummaryPart3() {
     if (!tbody) return;
     const grades = ['ປ.1', 'ປ.2', 'ປ.3', 'ປ.4', 'ປ.5'];
     let html = '', totalPass = 0, totalImp1 = 0, totalImp2 = 0;
-    const buildRows = (aspectName, indicators, subjectKey) => {
+    
+    // ເພີ່ມຕົວແປ startCode ເພື່ອສົ່ງເລກລະຫັດເລີ່ມຕົ້ນເຂົ້າມາ (ເຊັ່ນ 301, 306)
+    const buildRows = (aspectName, indicators, subjectKey, startCode) => {
         let rowsHtml = '';
         indicators.forEach((ind, index) => {
+            
+            // ສ້າງລະຫັດ ແລະ ຕັດຕົວເລກລຳດັບອອກຈາກຊື່ຕົວຊີ້ວັດ
+            let indCode = startCode + index;
+            let cleanIndText = ind.replace(/^\d+\.\s*/, '').trim();
+
             const grade = grades[index];
             const list = studentScores[grade] || [];
             let passCount = 0, totalCount = list.length;
@@ -2086,12 +2200,16 @@ function renderSummaryPart3() {
             let percentColor = totalCount > 0 ? 'text-red-600' : 'text-black';
             let aspectCell = '';
             if (index === 0) aspectCell = `<td rowspan="5" class="border border-gray-400 text-center font-bold" style="writing-mode: vertical-rl; transform: rotate(180deg); padding: 10px;">${aspectName}</td>`;
-            rowsHtml += `<tr class="hover:bg-gray-50">${aspectCell}<td class="border border-gray-400 p-2 text-sm">${ind}</td><td class="border border-gray-400 text-center text-lg">${checkPass}</td><td class="border border-gray-400 text-center text-lg">${checkImp1}</td><td class="border border-gray-400 text-center text-lg">${checkImp2}</td><td class="border border-gray-400 text-center font-bold ${percentColor}">${percentStr}</td></tr>`;
+            
+            // ໃສ່ຖັນລະຫັດເຂົ້າໄປ ແລະ ປ່ຽນໄປໃຊ້ cleanIndText ແທນ
+            rowsHtml += `<tr class="hover:bg-gray-50">${aspectCell}<td class="border border-gray-400 text-center font-bold text-gray-700 text-sm">${indCode}</td><td class="border border-gray-400 p-2 text-sm">${cleanIndText}</td><td class="border border-gray-400 text-center text-lg">${checkPass}</td><td class="border border-gray-400 text-center text-lg">${checkImp1}</td><td class="border border-gray-400 text-center text-lg">${checkImp2}</td><td class="border border-gray-400 text-center font-bold ${percentColor}">${percentStr}</td></tr>`;
         });
         return rowsHtml;
     };
-    html += buildRows('ພາສາ', MCP_DATA.part3.aspects[0].indicators, 'lao');
-    html += buildRows('ຄະນິດສາດ', MCP_DATA.part3.aspects[1].indicators, 'math');
+    
+    // ສົ່ງລະຫັດເລີ່ມຕົ້ນ 301 ສຳລັບພາສາ ແລະ 306 ສຳລັບຄະນິດສາດ
+    html += buildRows('ພາສາ', MCP_DATA.part3.aspects[0].indicators, 'lao', 301);
+    html += buildRows('ຄະນິດສາດ', MCP_DATA.part3.aspects[1].indicators, 'math', 306);
     
     let totalPercentSum = 0;
     grades.forEach(grade => {
@@ -2109,7 +2227,8 @@ function renderSummaryPart3() {
     });
     let p3Score = totalPercentSum / 10;
     
-    html += `<tr class="bg-gray-100 font-bold"><td colspan="2" class="border border-gray-400 text-center p-2">ລວມ</td><td class="border border-gray-400 text-center text-red-600 text-lg">${totalPass > 0 ? totalPass : ''}</td><td class="border border-gray-400 text-center text-red-600 text-lg">${totalImp1 > 0 ? totalImp1 : ''}</td><td class="border border-gray-400 text-center text-red-600 text-lg">${totalImp2 > 0 ? totalImp2 : ''}</td><td class="border border-gray-400 text-center relative overflow-hidden"><svg class="absolute inset-0 w-full h-full text-gray-400" preserveAspectRatio="none" viewBox="0 0 100 100"><line x1="0" y1="0" x2="100" y2="100" stroke="currentColor" stroke-width="1"></line><line x1="100" y1="0" x2="0" y2="100" stroke="currentColor" stroke-width="1"></line></svg></td></tr><tr class="bg-gray-100 font-bold"><td colspan="5" class="border border-gray-400 text-center p-2">ອັດຕາ ມຄພ ພາກທີ III</td><td class="border border-gray-400 text-center text-red-600">${p3Score.toFixed(2)}%</td></tr>`;
+    // ປັບ colspan="2" ເປັນ colspan="3" (ສຳລັບແຖວ "ລວມ") ແລະ colspan="5" ເປັນ colspan="6" (ສຳລັບແຖວ "ອັດຕາ ມຄພ")
+    html += `<tr class="bg-gray-100 font-bold"><td colspan="3" class="border border-gray-400 text-center p-2">ລວມ</td><td class="border border-gray-400 text-center text-red-600 text-lg">${totalPass > 0 ? totalPass : ''}</td><td class="border border-gray-400 text-center text-red-600 text-lg">${totalImp1 > 0 ? totalImp1 : ''}</td><td class="border border-gray-400 text-center text-red-600 text-lg">${totalImp2 > 0 ? totalImp2 : ''}</td><td class="border border-gray-400 text-center relative overflow-hidden"><svg class="absolute inset-0 w-full h-full text-gray-400" preserveAspectRatio="none" viewBox="0 0 100 100"><line x1="0" y1="0" x2="100" y2="100" stroke="currentColor" stroke-width="1"></line><line x1="100" y1="0" x2="0" y2="100" stroke="currentColor" stroke-width="1"></line></svg></td></tr><tr class="bg-gray-100 font-bold"><td colspan="6" class="border border-gray-400 text-center p-2">ອັດຕາ ມຄພ ພາກທີ III</td><td class="border border-gray-400 text-center text-red-600">${p3Score.toFixed(2)}%</td></tr>`;
     tbody.innerHTML = html;
 }
 
