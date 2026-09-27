@@ -2958,7 +2958,175 @@ function renderReport() {
               <td class="border border-gray-400 text-center text-red-600">${finalPct.toFixed(2)}%</td>
           </tr>
       </tbody></table>`;
-      document.getElementById('rptDetailedPart1').innerHTML = p1Html;
+
+      // --- ພາກທີ 2 ---
+      let p2Html = `<h2 class="section-title mt-8" style="page-break-before: always;">ລາຍລະອຽດການປະເມີນ ພາກທີ II: ຂະບວນການ ແລະ ພຶດຕິກຳ</h2>
+      <table class="w-full border-collapse border border-gray-400 text-sm mb-4">
+          <thead>
+              <tr class="bg-gray-50">
+                  <th rowspan="2" class="border border-gray-400 p-2 w-12 text-center">ດ້ານ</th>
+                  <th rowspan="2" class="border border-gray-400 p-2 text-center">ຕົວຊີ້ວັດ</th>
+                  <th colspan="3" class="border border-gray-400 p-2 text-center">ເກນການປະເມີນ</th>
+                  <th rowspan="2" class="border border-gray-400 p-2 w-12 text-center">%</th>
+              </tr>
+              <tr class="bg-gray-50">
+                  <th class="border border-gray-400 p-1 text-center w-12 text-xs">ຜ່ານ<br>ເກນ</th>
+                  <th class="border border-gray-400 p-1 text-center w-12 text-xs">ປັບປຸງ<br>ໜ້ອຍ</th>
+                  <th class="border border-gray-400 p-1 text-center w-12 text-xs">ປັບປຸງ<br>ຫຼາຍ</th>
+              </tr>
+          </thead>
+          <tbody>`;
+      let qIndex2 = 0, totalPass2 = 0, totalImp1_2 = 0, totalImp2_2 = 0, sumScore2 = 0;
+      MCP_DATA.part2.aspects.forEach((aspect, aIndex) => {
+          let cleanAspectName = aspect.name.replace(/^\d+\.\s*/, '');
+          aspect.indicators.forEach((ind, iIndex) => {
+              let v = state.part2 ? state.part2[qIndex2] : null;
+              let checkPass = '', checkImp1 = '', checkImp2 = '', pct = '';
+              
+              if(v === 'pass') { checkPass = '<span class="text-red-600 font-bold">✓</span>'; pct = '100'; totalPass2++; sumScore2 += 100; }
+              else if(v === 'improve') { checkImp1 = '<span class="text-red-600 font-bold">✓</span>'; pct = '50'; totalImp1_2++; sumScore2 += 50; }
+              else if(v === 'fail') { checkImp2 = '<span class="text-red-600 font-bold">✓</span>'; pct = '0'; totalImp2_2++; sumScore2 += 0; }
+              
+              let indCode = 200 + (qIndex2 + 1);
+              let indText = ind.replace(/^\d+\.\s*/, '').trim();
+
+              p2Html += `<tr>`;
+              if (iIndex === 0) {
+                  p2Html += `<td rowspan="${aspect.indicators.length}" class="border border-gray-400 text-center font-bold" style="writing-mode: vertical-rl; transform: rotate(180deg); padding: 10px;">${cleanAspectName}</td>`;
+              }
+              p2Html += `<td class="border border-gray-400 p-2"><span class="font-bold mr-1">${indCode}.</span> ${indText}</td>
+                      <td class="border border-gray-400 text-center text-lg">${checkPass}</td>
+                      <td class="border border-gray-400 text-center text-lg">${checkImp1}</td>
+                      <td class="border border-gray-400 text-center text-lg">${checkImp2}</td>
+                      <td class="border border-gray-400 text-center font-bold text-red-600">${pct}</td>
+              </tr>`;
+              qIndex2++;
+          });
+      });
+      let finalPct2 = qIndex2 > 0 ? (sumScore2 / qIndex2) : 0;
+      p2Html += `
+          <tr class="bg-gray-100 font-bold">
+              <td colspan="2" class="border border-gray-400 text-center p-2">ລວມ</td>
+              <td class="border border-gray-400 text-center text-red-600 text-lg">${totalPass2 || ''}</td>
+              <td class="border border-gray-400 text-center text-red-600 text-lg">${totalImp1_2 || ''}</td>
+              <td class="border border-gray-400 text-center text-red-600 text-lg">${totalImp2_2 || ''}</td>
+              <td class="border border-gray-400 bg-gray-200"></td>
+          </tr>
+          <tr class="bg-gray-100 font-bold text-base">
+              <td colspan="5" class="border border-gray-400 text-center p-2">ອັດຕາ ມຄພ ພາກທີ II</td>
+              <td class="border border-gray-400 text-center text-red-600">${finalPct2.toFixed(2)}%</td>
+          </tr>
+      </tbody></table>`;
+
+      // --- ພາກທີ 3 ---
+      let p3HtmlContainer = `<h2 class="section-title mt-8" style="page-break-before: always;">ລາຍລະອຽດການປະເມີນ ພາກທີ III: ຜົນການຮຽນຂອງນັກຮຽນ</h2>
+      <div id="rptDetailedPart3" class="text-center py-4 text-blue-600 font-bold">ກຳລັງປະມວນຜົນ...</div>`;
+
+      // ວາງທັງ 3 ພາກລົງໃນ Container ດຽວ
+      document.getElementById('rptDetailedPart1').innerHTML = p1Html + p2Html + p3HtmlContainer;
+
+      // ຟັງຊັນສ້າງຕາຕະລາງພາກ 3 ຕາມຂໍ້ມູນທີ່ໄດ້ຮັບ
+      const renderP3Report = (scoresData) => {
+          let html = `<table class="w-full border-collapse border border-gray-400 text-sm mb-4">
+              <thead>
+                  <tr class="bg-gray-50">
+                      <th rowspan="2" class="border border-gray-400 p-2 w-12 text-center">ດ້ານ</th>
+                      <th rowspan="2" class="border border-gray-400 p-2 text-center">ຕົວຊີ້ວັດ</th>
+                      <th colspan="3" class="border border-gray-400 p-2 text-center">ເກນການປະເມີນ</th>
+                      <th rowspan="2" class="border border-gray-400 p-2 w-12 text-center">%</th>
+                  </tr>
+                  <tr class="bg-gray-50">
+                      <th class="border border-gray-400 p-1 text-center w-12 text-xs">ຜ່ານ<br>ເກນ</th>
+                      <th class="border border-gray-400 p-1 text-center w-12 text-xs">ປັບປຸງ<br>ໜ້ອຍ</th>
+                      <th class="border border-gray-400 p-1 text-center w-12 text-xs">ປັບປຸງ<br>ຫຼາຍ</th>
+                  </tr>
+              </thead>
+              <tbody>`;
+          const grades = ['ປ.1', 'ປ.2', 'ປ.3', 'ປ.4', 'ປ.5'];
+          let totalPass3 = 0, totalImp1_3 = 0, totalImp2_3 = 0;
+          
+          const buildRows = (aspectName, indicators, subjectKey, startCode) => {
+              let rowsHtml = '';
+              indicators.forEach((ind, index) => {
+                  let indCode = startCode + index;
+                  let cleanIndText = ind.replace(/^\d+\.\s*/, '').trim();
+
+                  const grade = grades[index];
+                  const list = scoresData[grade] || [];
+                  let passCount = 0, totalCount = list.length;
+                  if (totalCount > 0) { list.forEach(st => { if (Number(st[subjectKey]) === 1) passCount++; }); }
+                  
+                  let percent = totalCount > 0 ? (passCount / totalCount) * 100 : 0;
+                  let percentStr = totalCount > 0 ? percent.toFixed(2) : "-";
+                  let checkPass = '', checkImp1 = '', checkImp2 = '';
+                  
+                  if (totalCount > 0) {
+                      if (percent >= 75) { checkPass = '<span class="text-red-600 font-bold">✓</span>'; totalPass3++; }
+                      else if (percent >= 50) { checkImp1 = '<span class="text-red-600 font-bold">✓</span>'; totalImp1_3++; }
+                      else { checkImp2 = '<span class="text-red-600 font-bold">✓</span>'; totalImp2_3++; }
+                  }
+                  
+                  let percentColor = totalCount > 0 ? 'text-red-600' : 'text-black';
+                  let aspectCell = '';
+                  if (index === 0) aspectCell = `<td rowspan="5" class="border border-gray-400 text-center font-bold" style="writing-mode: vertical-rl; transform: rotate(180deg); padding: 10px;">${aspectName}</td>`;
+                  
+                  rowsHtml += `<tr class="hover:bg-gray-50">${aspectCell}<td class="border border-gray-400 p-2"><span class="font-bold mr-1">${indCode}.</span> ${cleanIndText}</td><td class="border border-gray-400 text-center text-lg">${checkPass}</td><td class="border border-gray-400 text-center text-lg">${checkImp1}</td><td class="border border-gray-400 text-center text-lg">${checkImp2}</td><td class="border border-gray-400 text-center font-bold ${percentColor}">${percentStr}</td></tr>`;
+              });
+              return rowsHtml;
+          };
+          
+          html += buildRows('ພາສາ', MCP_DATA.part3.aspects[0].indicators, 'lao', 301);
+          html += buildRows('ຄະນິດສາດ', MCP_DATA.part3.aspects[1].indicators, 'math', 306);
+          
+          let totalPercentSum = 0;
+          grades.forEach(grade => {
+              const list = scoresData[grade] || [];
+              if (list.length > 0) {
+                  let totalLao = 0, totalMath = 0;
+                  list.forEach(st => {
+                      if (Number(st.lao) === 1) totalLao++;
+                      if (Number(st.math) === 1) totalMath++;
+                  });
+                  const percentLao = (totalLao / list.length) * 100;
+                  const percentMath = (totalMath / list.length) * 100;
+                  totalPercentSum += (percentLao + percentMath);
+              }
+          });
+          let p3Score = totalPercentSum / 10;
+          
+          html += `<tr class="bg-gray-100 font-bold"><td colspan="2" class="border border-gray-400 text-center p-2">ລວມ</td><td class="border border-gray-400 text-center text-red-600 text-lg">${totalPass3 || ''}</td><td class="border border-gray-400 text-center text-red-600 text-lg">${totalImp1_3 || ''}</td><td class="border border-gray-400 text-center text-red-600 text-lg">${totalImp2_3 || ''}</td><td class="border border-gray-400 bg-gray-200"></td></tr><tr class="bg-gray-100 font-bold text-base"><td colspan="5" class="border border-gray-400 text-center p-2">ອັດຕາ ມຄພ ພາກທີ III</td><td class="border border-gray-400 text-center text-red-600">${p3Score.toFixed(2)}%</td></tr></tbody></table>`;
+          
+          const el = document.getElementById('rptDetailedPart3');
+          if (el) el.innerHTML = html;
+      };
+
+      if (state.school && state.school.code === 'all_schools') {
+          const dCode = document.getElementById('filterDistrict')?.value;
+          const gCode = document.getElementById('filterGroup')?.value;
+          const targetSchools = getTargetSchoolsForDashboard(dCode, gCode);
+          const year = document.getElementById('academicYear')?.value || (new Date().getFullYear() + '-' + (new Date().getFullYear() + 1));
+          
+          db.ref('studentScores').once('value').then(snap => {
+              const allData = snap.val() || {};
+              let combinedScores = { 'ປ.1': [], 'ປ.2': [], 'ປ.3': [], 'ປ.4': [], 'ປ.5': [] };
+              
+              targetSchools.forEach(s => {
+                  const key = s.code + '_' + year;
+                  if (allData[key]) {
+                      ['ປ_1', 'ປ_2', 'ປ_3', 'ປ_4', 'ປ_5'].forEach(g => {
+                          const normalG = g.replace('_', '.');
+                          if (allData[key][g]) {
+                              const list = Array.isArray(allData[key][g]) ? allData[key][g] : Object.values(allData[key][g]);
+                              combinedScores[normalG] = combinedScores[normalG].concat(list);
+                          }
+                      });
+                  }
+              });
+              renderP3Report(combinedScores);
+          });
+      } else {
+          renderP3Report(studentScores);
+      }
 
       const scores = calcAspectScores().sort((a, b) => a.score - b.score).slice(0, 5);
       document.getElementById('rptPriorityTable').innerHTML = scores.map((s, i) => `<tr><td>${i + 1}</td><td>${s.part}</td><td>${s.aspect}</td><td>${s.score.toFixed(2)}%</td></tr>`).join('');
