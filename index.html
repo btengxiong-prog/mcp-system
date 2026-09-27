@@ -3265,8 +3265,9 @@ function renderReport() {
                   </td>
               </tr>`;
               
-              // ດຶງກິດຈະກຳຕົວຈິງທີ່ຜູ້ໃຊ້ແກ້ໄຂໃນໜ້າ "ແຜນພັດທະນາ" (state.activities) ມາສະແດງ
-              let userActivity = (state.activities && state.activities[idx]) ? state.activities[idx] : null;
+              // 💡ຈຸດສຳຄັນ: ດຶງກິດຈະກຳທີ່ຜູ້ໃຊ້ແກ້ໄຂໃນໜ້າ "ແຜນພັດທະນາ". 
+              // ຖ້າບໍ່ມີ (ຍັງບໍ່ໄດ້ພິມຫຍັງ) ໃຫ້ດຶງເອົາກິດຈະກຳແນະນຳຈາກ activityMap ມາໃສ່ໃຫ້ອັດຕະໂນມັດເລີຍ!
+              let userActivity = (state.activities && state.activities[idx]) ? state.activities[idx] : activityMap[s.aspect];
               
               if (userActivity) {
                   // ແປງຕົວເລກງົບປະມານໃຫ້ມີຈຸດ (comma) ຖ້າເປັນຕົວເລກ
@@ -3282,7 +3283,7 @@ function renderReport() {
                       <td class="border border-gray-400 p-2 text-center align-top">${userActivity.responsible || '-'}</td>
                   </tr>`;
               } else {
-                  actHtml += `<tr><td colspan="7" class="border border-gray-400 p-2 text-center text-gray-400 italic bg-white text-xs">ຍັງບໍ່ມີກິດຈະກຳ (ກະລຸນາເພີ່ມໃນໜ້າແຜນພັດທະນາ)</td></tr>`;
+                  actHtml += `<tr><td colspan="7" class="border border-gray-400 p-2 text-center text-gray-400 italic bg-white text-xs">ຍັງບໍ່ມີກິດຈະກຳສຳລັບດ້ານນີ້</td></tr>`;
               }
               
               // ກໍລະນີຜູ້ໃຊ້ເພີ່ມກິດຈະກຳຫຼາຍກວ່າ 5 ຢ່າງ, ໃຫ້ເອົາກິດຈະກຳທີ່ເຫຼືອມາສະແດງຕໍ່ທ້າຍວຽກຈຸດສຸມສຸດທ້າຍ
