@@ -434,7 +434,10 @@
       <div class="card p-5 mb-4">
         <h2 class="section-title">2. ກິດຈະກຳຕາມວຽກຈຸດສຸມ</h2>
         <div id="activityList"></div>
-        <button onclick="addActivity()" class="btn btn-success mt-3">+ ເພີ່ມກິດຈະກຳ</button>
+        <div class="flex gap-2 mt-3">
+            <button onclick="addActivity()" class="btn btn-success">+ ເພີ່ມກິດຈະກຳ</button>
+            <button onclick="autoSuggestActivities()" class="btn bg-purple-600 hover:bg-purple-700 text-white shadow">✨ ແນະນຳກິດຈະກຳອັດຕະໂນມັດ</button>
+        </div>
       </div>
       <div class="flex gap-2">
         <button onclick="savePlan()" class="btn btn-primary">💾 ບັນທຶກແຜນ</button>
@@ -2898,6 +2901,46 @@ function savePlan() {
     renderPlan(); 
 }
 
+// ຟັງຊັນແນະນຳກິດຈະກຳອັດຕະໂນມັດ
+function autoSuggestActivities() {
+    if (state.activities && state.activities.length > 0) {
+        showConfirm('ທ່ານມີກິດຈະກຳທີ່ກຳລັງຂຽນຢູ່ ຕ້ອງການລຶບຂອງເກົ່າແລ້ວໃຫ້ລະບົບແນະນຳໃໝ່ທັງໝົດແທ້ບໍ?', doSuggest, 'ຢືນຢັນການສ້າງໃໝ່');
+    } else {
+        doSuggest();
+    }
+
+    function doSuggest() {
+        const activityMap = {
+            "1. ໂຄງລ່າງພື້ນຖານ": { name: "ສ້ອມແປງ/ປັບປຸງໂຄງລ່າງພື້ນຖານ, ຫ້ອງນ້ຳ ແລະ ລະບົບນ້ຳໃຊ້ໃນໂຮງຮຽນ", code: "101, 103", budget: "500000", source: "ເງິນບໍລິຫານ/ຊຸມຊົນ", time: "ກ່ອນເປີດສົກຮຽນ", responsible: "ຜອ/ຊຸມຊົນ" },
+            "2. ອຸປະກອນໃນຫ້ອງຮຽນ": { name: "ຈັດຊື້/ສ້ອມແປງ ໂຕະ, ຕັ່ງນັ່ງນັກຮຽນ ແລະ ກະດານດຳ ໃຫ້ພຽງພໍ", code: "106, 107", budget: "300000", source: "ເງິນບໍລິຫານ", time: "ກ່ອນເປີດສົກຮຽນ", responsible: "ຜອ/ຄູປະຈຳຫ້ອງ" },
+            "3. ປຶ້ມແບບຮຽນ ແລະ ຄູ່ມືຄູ": { name: "ເຮັດໜັງສືສະເໜີຂໍ ຫຼື ຈັດຊື້ ປຶ້ມແບບຮຽນ ແລະ ຄູ່ມືຄູ", code: "111, 114", budget: "200000", source: "ສຶກສາເມືອງ", time: "ເດືອນ 9", responsible: "ຜອ/ວິຊາການ" },
+            "4. ອຸປະກອນ ແລະ ສື່ການສອນ": { name: "ຜະລິດສື່ການສອນດ້ວຍວັດສະດຸທ້ອງຖິ່ນ ແລະ ຊື້ອຸປະກອນຄະນິດສາດ", code: "117", budget: "150000", source: "ເງິນບໍລິຫານ", time: "ເດືອນ 9-10", responsible: "ຜອ/ຄູປະຈຳຫ້ອງ" },
+            "5. ບຸກຄະລາກອນ ແລະ ຂໍ້ມູນຂ່າວສານ": { name: "ປັບປຸງການບັນທຶກສະຖິຕິ ແລະ ເຮັດບັນຊີລາຍຮັບ-ລາຍຈ່າຍຢ່າງຊັດເຈນ", code: "121, 122", budget: "50000", source: "ເງິນບໍລິຫານ", time: "ຕະຫຼອດສົກຮຽນ", responsible: "ຜອ/ຜູ້ເຮັດບັນຊີ" },
+            "1. ທັດສະນະຄະຕິ": { name: "ຕັດຕັ້ງປະຕິບັດໂມງເວລາເຂັ້ມງວດ, ຈັດເວນອະນາໄມ ແລະ ສ້າງສວນຜັກ", code: "202, 204", budget: "50000", source: "ເງິນບໍລິຫານ", time: "ຕະຫຼອດສົກຮຽນ", responsible: "ຜອ/ຄູ/ນັກຮຽນ" },
+            "2. ຄວາມຮັບຜິດຊອບໃນການຄຸ້ມຄອງ": { name: "ປະຊຸມ ຄພສບ, ລົງເກັບກຳສະຖິຕິ ແລະ ລະດົມເດັກເຂົ້າຮຽນ", code: "206, 211", budget: "50000", source: "ເງິນບໍລິຫານ", time: "ເດືອນ 8 / ທ້າຍພາກ", responsible: "ຜອ/ຄພສບ" },
+            "3. ຄວາມຮັບຜິດຊອບໃນການສອນ": { name: "ສອນບຳລຸງນັກຮຽນອ່ອນ, ກວດບົດຮຽນເປັນປະຈຳ ແລະ ລາຍງານຜູ້ປົກຄອງ", code: "215, 216", budget: "0", source: "-", time: "ຕະຫຼອດສົກຮຽນ", responsible: "ຄູປະຈຳຫ້ອງ" },
+            "1. ພາສາລາວ": { name: "ຝຶກທັກສະການອ່ານພາສາລາວ (ພະຍັນຊະນະ, ສະຫຼະ, ປະໂຫຍກ, ບົດເລື່ອງ)", code: "301-305", budget: "0", source: "-", time: "ຕະຫຼອດສົກຮຽນ", responsible: "ຄູປະຈຳຫ້ອງ" },
+            "2. ຄະນິດສາດ": { name: "ຝຶກທັກສະການຄິດໄລ່ (ບວກ, ລົບ, ຄູນ, ຫານ) ແລະ ການຈຳແນກຈຳນວນ", code: "306-310", budget: "0", source: "-", time: "ຕະຫຼອດສົກຮຽນ", responsible: "ຄູປະຈຳຫ້ອງ" }
+        };
+
+        // ຄິດໄລ່ຫາ 5 ດ້ານທີ່ໄດ້ຄະແນນຕໍ່າສຸດ ມາເປັນວຽກຈຸດສຸມ
+        const topScores = calcAspectScores().sort((a, b) => a.score - b.score).slice(0, 5);
+        state.activities = [];
+
+        topScores.forEach(s => {
+            const template = activityMap[s.aspect];
+            if (template) {
+                // ສຳເນົາຂໍ້ມູນຈາກ Template ມາສ້າງເປັນ Array ກິດຈະກຳໃໝ່
+                state.activities.push({...template}); 
+            }
+        });
+
+        saveState();
+        renderActivityList();
+        showToast('ລະບົບໄດ້ແນະນຳແຜນກິດຈະກຳໃຫ້ຮຽບຮ້ອຍແລ້ວ! ທ່ານສາມາດແກ້ໄຂເພີ່ມເຕີມໄດ້.', 'success');
+    }
+}
+
 // ຟັງຊັນໃໝ່ສຳລັບອັບເດດຄ່າເພີ່ມ (Diff) ທັນທີເວລາຜູ້ໃຊ້ພິມປ່ຽນເປີເຊັນຄາດໝາຍ
 function updatePlanTargetUI(val) {
     let pVal = parseFloat(val);
@@ -3201,44 +3244,54 @@ function renderReport() {
           </thead>
           <tbody>`;
           
+      // ຂໍ້ມູນແນະນຳກິດຈະກຳອັດຕະໂນມັດ (ໃຊ້ສະເພາະໃນໜ້າລາຍງານ ບໍ່ກ່ຽວຂ້ອງກັບໜ້າແຜນພັດທະນາ)
+      const activityMap = {
+          "1. ໂຄງລ່າງພື້ນຖານ": { name: "ສ້ອມແປງ/ປັບປຸງໂຄງລ່າງພື້ນຖານ, ຫ້ອງນ້ຳ ແລະ ລະບົບນ້ຳໃຊ້ໃນໂຮງຮຽນ", code: "101, 103", budget: "500,000", source: "ເງິນບໍລິຫານ/ຊຸມຊົນ", time: "ກ່ອນເປີດສົກຮຽນ", responsible: "ຜອ/ຊຸມຊົນ" },
+          "2. ອຸປະກອນໃນຫ້ອງຮຽນ": { name: "ຈັດຊື້/ສ້ອມແປງ ໂຕະ, ຕັ່ງນັ່ງນັກຮຽນ ແລະ ກະດານດຳ ໃຫ້ພຽງພໍ", code: "106, 107", budget: "300,000", source: "ເງິນບໍລິຫານ", time: "ກ່ອນເປີດສົກຮຽນ", responsible: "ຜອ/ຄູປະຈຳຫ້ອງ" },
+          "3. ປຶ້ມແບບຮຽນ ແລະ ຄູ່ມືຄູ": { name: "ເຮັດໜັງສືສະເໜີຂໍ ຫຼື ຈັດຊື້ ປຶ້ມແບບຮຽນ ແລະ ຄູ່ມືຄູ", code: "111, 114", budget: "200,000", source: "ສຶກສາເມືອງ", time: "ເດືອນ 9", responsible: "ຜອ/ວິຊາການ" },
+          "4. ອຸປະກອນ ແລະ ສື່ການສອນ": { name: "ຜະລິດສື່ການສອນດ້ວຍວັດສະດຸທ້ອງຖິ່ນ ແລະ ຊື້ອຸປະກອນຄະນິດສາດ", code: "117", budget: "150,000", source: "ເງິນບໍລິຫານ", time: "ເດືອນ 9-10", responsible: "ຜອ/ຄູປະຈຳຫ້ອງ" },
+          "5. ບຸກຄະລາກອນ ແລະ ຂໍ້ມູນຂ່າວສານ": { name: "ປັບປຸງການບັນທຶກສະຖິຕິ ແລະ ເຮັດບັນຊີລາຍຮັບ-ລາຍຈ່າຍຢ່າງຊັດເຈນ", code: "121, 122", budget: "50,000", source: "ເງິນບໍລິຫານ", time: "ຕະຫຼອດສົກຮຽນ", responsible: "ຜອ/ຜູ້ເຮັດບັນຊີ" },
+          "1. ທັດສະນະຄະຕິ": { name: "ຕັດຕັ້ງປະຕິບັດໂມງເວລາເຂັ້ມງວດ, ຈັດເວນອະນາໄມ ແລະ ສ້າງສວນຜັກ", code: "202, 204", budget: "50,000", source: "ເງິນບໍລິຫານ", time: "ຕະຫຼອດສົກຮຽນ", responsible: "ຜອ/ຄູ/ນັກຮຽນ" },
+          "2. ຄວາມຮັບຜິດຊອບໃນການຄຸ້ມຄອງ": { name: "ປະຊຸມ ຄພສບ, ລົງເກັບກຳສະຖິຕິ ແລະ ລະດົມເດັກເຂົ້າຮຽນ", code: "206, 211", budget: "50,000", source: "ເງິນບໍລິຫານ", time: "ເດືອນ 8 / ທ້າຍພາກ", responsible: "ຜອ/ຄພສບ" },
+          "3. ຄວາມຮັບຜິດຊອບໃນການສອນ": { name: "ສອນບຳລຸງນັກຮຽນອ່ອນ, ກວດບົດຮຽນເປັນປະຈຳ ແລະ ລາຍງານຜູ້ປົກຄອງ", code: "215, 216", budget: "0", source: "-", time: "ຕະຫຼອດສົກຮຽນ", responsible: "ຄູປະຈຳຫ້ອງ" },
+          "1. ພາສາລາວ": { name: "ຝຶກທັກສະການອ່ານພາສາລາວ (ພະຍັນຊະນະ, ສະຫຼະ, ປະໂຫຍກ, ບົດເລື່ອງ)", code: "301-305", budget: "0", source: "-", time: "ຕະຫຼອດສົກຮຽນ", responsible: "ຄູປະຈຳຫ້ອງ" },
+          "2. ຄະນິດສາດ": { name: "ຝຶກທັກສະການຄິດໄລ່ (ບວກ, ລົບ, ຄູນ, ຫານ) ແລະ ການຈຳແນກຈຳນວນ", code: "306-310", budget: "0", source: "-", time: "ຕະຫຼອດສົກຮຽນ", responsible: "ຄູປະຈຳຫ້ອງ" }
+      };
+
       // ດຶງຂໍ້ມູນວຽກຈຸດສຸມທັງໝົດ ມາສະແດງໃນຕາຕະລາງ ໃຫ້ກົງກັບຂໍ້ IV
       const topScoresForTable = calcAspectScores().sort((a, b) => a.score - b.score).slice(0, 5);
-      let focusListForTable = topScoresForTable.map(s => autoSummaryMap[s.aspect] || `ປັບປຸງ ແລະ ພັດທະນາວຽກງານໃນດ້ານ ${s.aspect}`);
-      
-      if (focusListForTable.length === 0) {
-          focusListForTable.push("ປັບປຸງຄຸນນະພາບການສຶກສາລວມ");
-      }
 
-      focusListForTable.forEach((focusText, idx) => {
-          // ແຖວຫົວຂໍ້ວຽກຈຸດສຸມ 1 - 5
-          actHtml += `<tr>
-              <td colspan="7" class="border border-gray-400 p-2 text-left bg-gray-50">
-                  <span class="font-bold text-base text-blue-900">ວຽກຈຸດສຸມ ${idx + 1}:</span> <span class="text-base">${focusText}</span>
-              </td>
-          </tr>`;
-          
-          // ແຖວກິດຈະກຳ: ເນື່ອງຈາກປັດຈຸບັນຍັງບໍ່ມີການແຍກກິດຈະກຳຕາມວຽກຈຸດສຸມ ເຮົາຈະເອົາທັງໝົດໄປສະແດງໃນວຽກຈຸດສຸມ 1 ກ່ອນ
-          if (idx === 0) {
-              if (!state.activities || state.activities.length === 0) {
-                  actHtml += `<tr><td colspan="7" class="border border-gray-400 p-4 text-center text-gray-500 italic bg-white">ຍັງບໍ່ມີຂໍ້ມູນກິດຈະກຳ. ກະລຸນາເພີ່ມໃນໜ້າແຜນພັດທະນາ.</td></tr>`;
+      if (topScoresForTable.length === 0) {
+           actHtml += `<tr><td colspan="7" class="border border-gray-400 p-4 text-center text-gray-500 italic bg-white">ຍັງບໍ່ມີຂໍ້ມູນການປະເມີນ</td></tr>`;
+      } else {
+          topScoresForTable.forEach((s, idx) => {
+              let focusText = autoSummaryMap[s.aspect] || `ປັບປຸງ ແລະ ພັດທະນາວຽກງານໃນດ້ານ ${s.aspect}`;
+              
+              // ແຖວຫົວຂໍ້ວຽກຈຸດສຸມ 1 - 5
+              actHtml += `<tr>
+                  <td colspan="7" class="border border-gray-400 p-2 text-left bg-gray-50">
+                      <span class="font-bold text-base text-blue-900">ວຽກຈຸດສຸມ ${idx + 1}:</span> <span class="text-base">${focusText}</span>
+                  </td>
+              </tr>`;
+              
+              // ດຶງກິດຈະກຳແນະນຳມາໃສ່ໂລດ ໂດຍບໍ່ຕ້ອງສົນໃຈ state.activities
+              let suggestion = activityMap[s.aspect];
+              
+              if (suggestion) {
+                  actHtml += `<tr>
+                      <td class="border border-gray-400 p-2 text-center align-top">1</td>
+                      <td class="border border-gray-400 p-2 text-left align-top leading-relaxed">${suggestion.name}</td>
+                      <td class="border border-gray-400 p-2 text-center align-top">${suggestion.code}</td>
+                      <td class="border border-gray-400 p-2 text-right align-top whitespace-nowrap text-blue-700">${suggestion.budget}</td>
+                      <td class="border border-gray-400 p-2 text-center align-top">${suggestion.source}</td>
+                      <td class="border border-gray-400 p-2 text-center align-top">${suggestion.time}</td>
+                      <td class="border border-gray-400 p-2 text-center align-top">${suggestion.responsible}</td>
+                  </tr>`;
               } else {
-                  state.activities.forEach((a, i) => {
-                      actHtml += `<tr>
-                          <td class="border border-gray-400 p-2 text-center align-top">${i + 1}</td>
-                          <td class="border border-gray-400 p-2 text-left align-top leading-relaxed">${a.name || '-'}</td>
-                          <td class="border border-gray-400 p-2 text-center align-top">${a.code || '-'}</td>
-                          <td class="border border-gray-400 p-2 text-center align-top whitespace-nowrap">${a.budget ? Number(a.budget).toLocaleString() : '-'}</td>
-                          <td class="border border-gray-400 p-2 text-center align-top">${a.source || '-'}</td>
-                          <td class="border border-gray-400 p-2 text-center align-top">${a.time || '-'}</td>
-                          <td class="border border-gray-400 p-2 text-center align-top">${a.responsible || '-'}</td>
-                      </tr>`;
-                  });
+                  actHtml += `<tr><td colspan="7" class="border border-gray-400 p-2 text-center text-gray-400 italic bg-white text-xs">ຍັງບໍ່ມີກິດຈະກຳແນະນຳສຳລັບດ້ານນີ້</td></tr>`;
               }
-          } else {
-              // ສຳລັບວຽກຈຸດສຸມ 2,3,4,5 ທີ່ຍັງບໍ່ມີກິດຈະກຳ ໃຫ້ສະແດງຊ່ອງວ່າງໄວ້ (ຄືກັບແບບຟອມມາດຕະຖານ)
-              actHtml += `<tr><td colspan="7" class="border border-gray-400 p-2 text-center text-gray-400 italic bg-white text-xs">ຍັງບໍ່ມີກິດຈະກຳ</td></tr>`;
-          }
-      });
+          });
+      }
 
       actHtml += `</tbody></table>`;
       document.getElementById('rptActivityList').innerHTML = actHtml;
