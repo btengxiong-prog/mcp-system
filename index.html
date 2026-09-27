@@ -444,7 +444,7 @@
     <!-- ===== REPORT ===== -->
     <div id="page-report" class="page hidden">
       <div class="flex justify-between items-center mb-4 no-print">
-        <h1 class="text-2xl font-bold text-gray-800">ລາຍງານຜົນການປະເມີນ ແລະ ແຜນພັດທະນາໂຮງຮຽນ</h1>
+        <h1 class="text-2xl font-bold text-gray-800">ລາຍງານ/ແຜນພັດທະນາໂຮງຮຽນ</h1>
         <button onclick="window.print()" class="btn btn-primary">🖨️ ພິມລາຍງານ</button>
       </div>
       <div class="card p-6">
@@ -473,9 +473,32 @@
         </table>
         <h2 class="section-title">IV. ວຽກຈຸດສຸມ ແລະ ກິດຈະກຳ</h2>
         <div id="rptFocusList"></div>
-        <h2 class="section-title">V. ຄາດໝາຍ</h2>
-        <p>ອັດຕາ ມຄພ ຄາດໝາຍ: <b id="rptTarget">-</b> (ເພີ່ມຂຶ້ນ <b id="rptDiff">-</b>)</p>
-        <div class="grid grid-cols-2 gap-8 mt-12 text-center">
+        <h2 class="section-title" style="page-break-before: always;">V. ແຜນພັດທະນາ (ຄາດໝາຍ ແລະ ກິດຈະກຳ)</h2>
+        <div class="mb-4">
+            <h3 class="font-bold text-lg mb-2 mt-4 text-blue-900">1. ຄາດໝາຍ</h3>
+            <table class="w-full border-collapse border border-gray-400 text-sm text-center mb-6">
+                <thead class="bg-gray-100">
+                    <tr>
+                        <th class="border border-gray-400 p-2 text-center">ອັດຕາ ມຄພ ປັດຈຸບັນ</th>
+                        <th class="border border-gray-400 p-2 text-center">ອັດຕາ ມຄພ ຄາດໝາຍ</th>
+                        <th class="border border-gray-400 p-2 text-center">ຄ່າເພີ່ມ</th>
+                        <th class="border border-gray-400 p-2 text-center">ປະເພດເປົ້າໝາຍ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="border border-gray-400 p-2 text-center font-bold text-blue-700 text-lg" id="rptPlanCurrent">-</td>
+                        <td class="border border-gray-400 p-2 text-center font-bold text-green-600 text-lg" id="rptPlanTarget">-</td>
+                        <td class="border border-gray-400 p-2 text-center font-bold text-red-600 text-lg" id="rptPlanDiff">-</td>
+                        <td class="border border-gray-400 p-2 text-center font-bold flex justify-center items-center h-full" id="rptPlanCategory">-</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3 class="font-bold text-lg mb-2 text-blue-900">2. ກິດຈະກຳຕາມວຽກຈຸດສຸມ</h3>
+            <div id="rptActivityList"></div>
+        </div>
+        <div class="grid grid-cols-2 gap-8 mt-12 text-center" style="page-break-inside: avoid;">
           <div><div class="font-bold">ປະທານ ຄະນະພັດທະນາການສຶກສາຂັ້ນບ້ານ</div><div class="mt-16 text-gray-400">...........................................</div></div>
           <div><div class="font-bold">ຜູ້ອຳນວຍການ/ຫົວໜ້າໂຮງຮຽນ</div><div class="mt-16 text-gray-400">...........................................</div></div>
         </div>
@@ -3155,9 +3178,47 @@ function renderReport() {
   });
   
   document.getElementById('rptFocusList').innerHTML = focusHtml;
-  document.getElementById('rptTarget').innerText = state.planTarget + '%';
-  document.getElementById('rptDiff').innerText = (state.planTarget - total).toFixed(2) + '%';
-}
+
+      // ຕື່ມຂໍ້ມູນໃສ່ຕາຕະລາງ V. ແຜນພັດທະນາ
+      document.getElementById('rptPlanCurrent').innerText = total.toFixed(2) + '%';
+      document.getElementById('rptPlanTarget').innerText = state.planTarget + '%';
+      document.getElementById('rptPlanDiff').innerText = (state.planTarget - total).toFixed(2) + '%';
+      const planCat = getCategory(state.planTarget, currentLevel);
+      document.getElementById('rptPlanCategory').innerHTML = `<span class="badge ${planCat.cls}">${planCat.label}</span>`;
+
+      // ສ້າງຕາຕະລາງກິດຈະກຳ
+      let actHtml = '';
+      if (!state.activities || state.activities.length === 0) {
+          actHtml = '<p class="text-gray-500 italic text-center py-4 border border-gray-300 bg-gray-50">ຍັງບໍ່ມີຂໍ້ມູນກິດຈະກຳ. ກະລຸນາເພີ່ມໃນໜ້າແຜນພັດທະນາ.</p>';
+      } else {
+          actHtml = `<table class="w-full border-collapse border border-gray-400 text-sm">
+              <thead class="bg-gray-100">
+                  <tr>
+                      <th class="border border-gray-400 p-2 w-12 text-center">ລ/ດ</th>
+                      <th class="border border-gray-400 p-2 text-left">ກິດຈະກຳ</th>
+                      <th class="border border-gray-400 p-2 text-center">ລະຫັດ ຕຊວ</th>
+                      <th class="border border-gray-400 p-2 text-right">ງົບປະມານ</th>
+                      <th class="border border-gray-400 p-2 text-center">ແຫຼ່ງງົບ</th>
+                      <th class="border border-gray-400 p-2 text-center">ໄລຍະເວລາ</th>
+                      <th class="border border-gray-400 p-2 text-center">ຜູ້ຮັບຜິດຊອບ</th>
+                  </tr>
+              </thead>
+              <tbody>`;
+          state.activities.forEach((a, i) => {
+              actHtml += `<tr>
+                  <td class="border border-gray-400 p-2 text-center">${i + 1}</td>
+                  <td class="border border-gray-400 p-2 font-semibold">${a.name || '-'}</td>
+                  <td class="border border-gray-400 p-2 text-center">${a.code || '-'}</td>
+                  <td class="border border-gray-400 p-2 text-right text-blue-700">${a.budget ? Number(a.budget).toLocaleString() + ' ₭' : '-'}</td>
+                  <td class="border border-gray-400 p-2 text-center">${a.source || '-'}</td>
+                  <td class="border border-gray-400 p-2 text-center">${a.time || '-'}</td>
+                  <td class="border border-gray-400 p-2 text-center">${a.responsible || '-'}</td>
+              </tr>`;
+          });
+          actHtml += `</tbody></table>`;
+      }
+      document.getElementById('rptActivityList').innerHTML = actHtml;
+    }
 
 function initLocationSelectors() {
     const districtSelect = document.getElementById('filterDistrict');
