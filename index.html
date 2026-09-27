@@ -1566,13 +1566,15 @@ function navigate(page) {
   }
 
   if (page === 'dashboard') renderDashboard();
-  if (page === 'location') renderLocationTable();
-  if (page === 'priority') renderPriority();
-  if (page === 'plan') renderPlan();
-  if (page === 'report') renderReport();
-  if (page === 'summary_group') initSummaryFilters();
-  
-  // ປິດ Sidebar ອັດຕະໂນມັດຫຼັງຈາກກົດເລືອກເມນູໃນມືຖື
+      if (page === 'location') renderLocationTable();
+      if (page === 'part3') { if (typeof renderPart3Table === 'function') renderPart3Table(); }
+      if (page === 'summary_part3') { if (typeof renderSummaryPart3 === 'function') renderSummaryPart3(); }
+      if (page === 'priority') renderPriority();
+      if (page === 'plan') renderPlan();
+      if (page === 'report') renderReport();
+      if (page === 'summary_group') initSummaryFilters();
+      
+      // ປິດ Sidebar ອັດຕະໂນມັດຫຼັງຈາກກົດເລືອກເມນູໃນມືຖື
   const sidebar = document.getElementById('sidebar');
   const overlay = document.getElementById('mobileOverlay');
   if (window.innerWidth < 768 && sidebar && !sidebar.classList.contains('-translate-x-full')) {
@@ -2217,63 +2219,93 @@ function calculatePart3Summary(grade) {
 function renderSummaryPart3() {
     const tbody = document.getElementById('summaryPart3Body');
     if (!tbody) return;
+    
     const grades = ['ປ.1', 'ປ.2', 'ປ.3', 'ປ.4', 'ປ.5'];
-    let html = '', totalPass = 0, totalImp1 = 0, totalImp2 = 0;
     
-    // ເພີ່ມຕົວແປ startCode ເພື່ອສົ່ງເລກລະຫັດເລີ່ມຕົ້ນເຂົ້າມາ (ເຊັ່ນ 301, 306)
-    const buildRows = (aspectName, indicators, subjectKey, startCode) => {
-        let rowsHtml = '';
-        indicators.forEach((ind, index) => {
-            
-            // ສ້າງລະຫັດ ແລະ ຕັດຕົວເລກລຳດັບອອກຈາກຊື່ຕົວຊີ້ວັດ
-            let indCode = startCode + index;
-            let cleanIndText = ind.replace(/^\d+\.\s*/, '').trim();
+    const generateHtml = (scoresData) => {
+        let html = '', totalPass = 0, totalImp1 = 0, totalImp2 = 0;
+        const buildRows = (aspectName, indicators, subjectKey, startCode) => {
+            let rowsHtml = '';
+            indicators.forEach((ind, index) => {
+                let indCode = startCode + index;
+                let cleanIndText = ind.replace(/^\d+\.\s*/, '').trim();
 
-            const grade = grades[index];
-            const list = studentScores[grade] || [];
-            let passCount = 0, totalCount = list.length;
-            if (totalCount > 0) { list.forEach(st => { if (Number(st[subjectKey]) === 1) passCount++; }); }
-            let percent = totalCount > 0 ? (passCount / totalCount) * 100 : 0;
-            let percentStr = totalCount > 0 ? percent.toFixed(2) : "-";
-            let checkPass = '', checkImp1 = '', checkImp2 = '';
-            if (totalCount > 0) {
-                if (percent >= 75) { checkPass = '<span class="text-red-600 font-bold">✓</span>'; totalPass++; }
-                else if (percent >= 50) { checkImp1 = '<span class="text-red-600 font-bold">✓</span>'; totalImp1++; }
-                else { checkImp2 = '<span class="text-red-600 font-bold">✓</span>'; totalImp2++; }
-            }
-            let percentColor = totalCount > 0 ? 'text-red-600' : 'text-black';
-            let aspectCell = '';
-            if (index === 0) aspectCell = `<td rowspan="5" class="border border-gray-400 text-center font-bold" style="writing-mode: vertical-rl; transform: rotate(180deg); padding: 10px;">${aspectName}</td>`;
-            
-            // ໃສ່ຖັນລະຫັດເຂົ້າໄປ ແລະ ປ່ຽນໄປໃຊ້ cleanIndText ແທນ
-            rowsHtml += `<tr class="hover:bg-gray-50">${aspectCell}<td class="border border-gray-400 text-center font-bold text-gray-700 text-sm">${indCode}</td><td class="border border-gray-400 p-2 text-sm">${cleanIndText}</td><td class="border border-gray-400 text-center text-lg">${checkPass}</td><td class="border border-gray-400 text-center text-lg">${checkImp1}</td><td class="border border-gray-400 text-center text-lg">${checkImp2}</td><td class="border border-gray-400 text-center font-bold ${percentColor}">${percentStr}</td></tr>`;
-        });
-        return rowsHtml;
-    };
-    
-    // ສົ່ງລະຫັດເລີ່ມຕົ້ນ 301 ສຳລັບພາສາ ແລະ 306 ສຳລັບຄະນິດສາດ
-    html += buildRows('ພາສາ', MCP_DATA.part3.aspects[0].indicators, 'lao', 301);
-    html += buildRows('ຄະນິດສາດ', MCP_DATA.part3.aspects[1].indicators, 'math', 306);
-    
-    let totalPercentSum = 0;
-    grades.forEach(grade => {
-        const list = studentScores[grade] || [];
-        if (list.length > 0) {
-            let totalLao = 0, totalMath = 0;
-            list.forEach(st => {
-                if (Number(st.lao) === 1) totalLao++;
-                if (Number(st.math) === 1) totalMath++;
+                const grade = grades[index];
+                const list = scoresData[grade] || [];
+                let passCount = 0, totalCount = list.length;
+                if (totalCount > 0) { list.forEach(st => { if (Number(st[subjectKey]) === 1) passCount++; }); }
+                
+                let percent = totalCount > 0 ? (passCount / totalCount) * 100 : 0;
+                let percentStr = totalCount > 0 ? percent.toFixed(2) : "-";
+                let checkPass = '', checkImp1 = '', checkImp2 = '';
+                
+                if (totalCount > 0) {
+                    if (percent >= 75) { checkPass = '<span class="text-red-600 font-bold">✓</span>'; totalPass++; }
+                    else if (percent >= 50) { checkImp1 = '<span class="text-red-600 font-bold">✓</span>'; totalImp1++; }
+                    else { checkImp2 = '<span class="text-red-600 font-bold">✓</span>'; totalImp2++; }
+                }
+                
+                let percentColor = totalCount > 0 ? 'text-red-600' : 'text-black';
+                let aspectCell = '';
+                if (index === 0) aspectCell = `<td rowspan="5" class="border border-gray-400 text-center font-bold" style="writing-mode: vertical-rl; transform: rotate(180deg); padding: 10px;">${aspectName}</td>`;
+                
+                rowsHtml += `<tr class="hover:bg-gray-50">${aspectCell}<td class="border border-gray-400 text-center font-bold text-gray-700 text-sm">${indCode}</td><td class="border border-gray-400 p-2 text-sm">${cleanIndText}</td><td class="border border-gray-400 text-center text-lg">${checkPass}</td><td class="border border-gray-400 text-center text-lg">${checkImp1}</td><td class="border border-gray-400 text-center text-lg">${checkImp2}</td><td class="border border-gray-400 text-center font-bold ${percentColor}">${percentStr}</td></tr>`;
             });
-            const percentLao = (totalLao / list.length) * 100;
-            const percentMath = (totalMath / list.length) * 100;
-            totalPercentSum += (percentLao + percentMath);
-        }
-    });
-    let p3Score = totalPercentSum / 10;
-    
-    // ປັບ colspan="2" ເປັນ colspan="3" (ສຳລັບແຖວ "ລວມ") ແລະ colspan="5" ເປັນ colspan="6" (ສຳລັບແຖວ "ອັດຕາ ມຄພ")
-    html += `<tr class="bg-gray-100 font-bold"><td colspan="3" class="border border-gray-400 text-center p-2">ລວມ</td><td class="border border-gray-400 text-center text-red-600 text-lg">${totalPass > 0 ? totalPass : ''}</td><td class="border border-gray-400 text-center text-red-600 text-lg">${totalImp1 > 0 ? totalImp1 : ''}</td><td class="border border-gray-400 text-center text-red-600 text-lg">${totalImp2 > 0 ? totalImp2 : ''}</td><td class="border border-gray-400 text-center relative overflow-hidden"><svg class="absolute inset-0 w-full h-full text-gray-400" preserveAspectRatio="none" viewBox="0 0 100 100"><line x1="0" y1="0" x2="100" y2="100" stroke="currentColor" stroke-width="1"></line><line x1="100" y1="0" x2="0" y2="100" stroke="currentColor" stroke-width="1"></line></svg></td></tr><tr class="bg-gray-100 font-bold"><td colspan="6" class="border border-gray-400 text-center p-2">ອັດຕາ ມຄພ ພາກທີ III</td><td class="border border-gray-400 text-center text-red-600">${p3Score.toFixed(2)}%</td></tr>`;
-    tbody.innerHTML = html;
+            return rowsHtml;
+        };
+        
+        html += buildRows('ພາສາ', MCP_DATA.part3.aspects[0].indicators, 'lao', 301);
+        html += buildRows('ຄະນິດສາດ', MCP_DATA.part3.aspects[1].indicators, 'math', 306);
+        
+        let totalPercentSum = 0;
+        grades.forEach(grade => {
+            const list = scoresData[grade] || [];
+            if (list.length > 0) {
+                let totalLao = 0, totalMath = 0;
+                list.forEach(st => {
+                    if (Number(st.lao) === 1) totalLao++;
+                    if (Number(st.math) === 1) totalMath++;
+                });
+                const percentLao = (totalLao / list.length) * 100;
+                const percentMath = (totalMath / list.length) * 100;
+                totalPercentSum += (percentLao + percentMath);
+            }
+        });
+        // ຫານໃຫ້ 10 ສະເໝີຕາມຫຼັກສູດ (2 ວິຊາ x 5 ຂັ້ນຮຽນ)
+        let p3Score = totalPercentSum / 10;
+        
+        html += `<tr class="bg-gray-100 font-bold"><td colspan="3" class="border border-gray-400 text-center p-2">ລວມ</td><td class="border border-gray-400 text-center text-red-600 text-lg">${totalPass > 0 ? totalPass : ''}</td><td class="border border-gray-400 text-center text-red-600 text-lg">${totalImp1 > 0 ? totalImp1 : ''}</td><td class="border border-gray-400 text-center text-red-600 text-lg">${totalImp2 > 0 ? totalImp2 : ''}</td><td class="border border-gray-400 text-center relative overflow-hidden"><svg class="absolute inset-0 w-full h-full text-gray-400" preserveAspectRatio="none" viewBox="0 0 100 100"><line x1="0" y1="0" x2="100" y2="100" stroke="currentColor" stroke-width="1"></line><line x1="100" y1="0" x2="0" y2="100" stroke="currentColor" stroke-width="1"></line></svg></td></tr><tr class="bg-gray-100 font-bold"><td colspan="6" class="border border-gray-400 text-center p-2">ອັດຕາ ມຄພ ພາກທີ III</td><td class="border border-gray-400 text-center text-red-600">${p3Score.toFixed(2)}%</td></tr>`;
+        return html;
+    };
+
+    if (state.school && state.school.code === 'all_schools') {
+        tbody.innerHTML = `<tr><td colspan="7" class="py-12 text-center font-bold text-blue-600 text-lg">ກຳລັງປະມວນຜົນຂໍ້ມູນລວມທຸກໂຮງຮຽນ... ⏳</td></tr>`;
+        const dCode = document.getElementById('filterDistrict')?.value;
+        const gCode = document.getElementById('filterGroup')?.value;
+        const targetSchools = getTargetSchoolsForDashboard(dCode, gCode);
+        const year = document.getElementById('academicYear')?.value || (new Date().getFullYear() + '-' + (new Date().getFullYear() + 1));
+        
+        db.ref('studentScores').once('value').then(snap => {
+            const allData = snap.val() || {};
+            let combinedScores = { 'ປ.1': [], 'ປ.2': [], 'ປ.3': [], 'ປ.4': [], 'ປ.5': [] };
+            
+            targetSchools.forEach(s => {
+                const key = s.code + '_' + year;
+                if (allData[key]) {
+                    ['ປ_1', 'ປ_2', 'ປ_3', 'ປ_4', 'ປ_5'].forEach(g => {
+                        const normalG = g.replace('_', '.');
+                        if (allData[key][g]) {
+                            const list = Array.isArray(allData[key][g]) ? allData[key][g] : Object.values(allData[key][g]);
+                            combinedScores[normalG] = combinedScores[normalG].concat(list);
+                        }
+                    });
+                }
+            });
+            tbody.innerHTML = generateHtml(combinedScores);
+        });
+    } else {
+        tbody.innerHTML = generateHtml(studentScores);
+    }
 }
 
 function calcTotal() {
