@@ -2134,6 +2134,7 @@ function confirmAddStudent() {
         Promise.all(fetchPromises).then(results => {
             let savePromises = [];
             let totalStudentsSaved = 0;
+            let totalDuplicates = 0; // ຕົວແປສຳລັບນັບຈຳນວນນັກຮຽນທີ່ຊ້ຳກັນ
 
             results.forEach(res => {
                 let dataToSave = res.existingData;
@@ -2146,8 +2147,28 @@ function confirmAddStudent() {
                         dataToSave[safeGradeKey] = Object.values(dataToSave[safeGradeKey]);
                     }
 
-                    dataToSave[safeGradeKey] = dataToSave[safeGradeKey].concat(newDataForSchool[safeGradeKey]);
-                    totalStudentsSaved += newDataForSchool[safeGradeKey].length;
+                    // --- ລະບົບກວດສອບລາຍຊື່ຊ້ຳກັນ (ປຽບທຽບຊື່) ---
+                    // ດຶງເອົາຊື່ນັກຮຽນເກົ່າທັງໝົດໃນຂັ້ນນີ້ມາໄວ້ເພື່ອກວດສອບ (ປ່ຽນເປັນໂຕນ້ອຍ ແລະ ຕັດຍະຫວ່າງ ເພື່ອໃຫ້ກວດໄດ້ຊັດເຈນ)
+                    let existingNames = dataToSave[safeGradeKey].map(st => st.name.trim().toLowerCase());
+                    let uniqueNewStudents = [];
+
+                    newDataForSchool[safeGradeKey].forEach(newSt => {
+                        let newNameLower = newSt.name.trim().toLowerCase();
+                        
+                        // ຖ້າຊື່ນີ້ຍັງບໍ່ມີໃນລະບົບ
+                        if (!existingNames.includes(newNameLower)) {
+                            uniqueNewStudents.push(newSt);
+                            existingNames.push(newNameLower); // ເພີ່ມເຂົ້າໃນ existingNames ເພື່ອປ້ອງກັນການກັອບປີ້ມາຊ້ຳກັນເອງໃນຮອບດຽວ
+                        } else {
+                            totalDuplicates++; // ນັບຈຳນວນທີ່ຊ້ຳ
+                        }
+                    });
+
+                    // ບັນທຶກສະເພາະລາຍຊື່ທີ່ບໍ່ຊ້ຳກັນ
+                    if (uniqueNewStudents.length > 0) {
+                        dataToSave[safeGradeKey] = dataToSave[safeGradeKey].concat(uniqueNewStudents);
+                        totalStudentsSaved += uniqueNewStudents.length;
+                    }
                 }
 
                 savePromises.push(db.ref('studentScores/' + res.schoolKey).set(dataToSave));
@@ -2160,12 +2181,20 @@ function confirmAddStudent() {
                 }
             });
 
-            return Promise.all(savePromises).then(() => { return totalStudentsSaved; });
-        }).then((totalStudentsSaved) => {
+            return Promise.all(savePromises).then(() => { return { totalStudentsSaved, totalDuplicates, schoolCodesLength: schoolCodes.length }; });
+        }).then((result) => {
             renderPart3Table();
             closeAddStudentModal();
             if (btnSubmit) btnSubmit.innerText = 'ບັນທຶກຂໍ້ມູນ';
-            showToast(`ເພີ່ມລາຍຊື່ນັກຮຽນ ${totalStudentsSaved} ຄົນ ເຂົ້າ ${schoolCodes.length} ໂຮງຮຽນ ສຳເລັດແລ້ວ!`, 'success');
+            
+            // ແຈ້ງເຕືອນແບບສະຫຼາດ (ບອກທັງຄົນທີ່ເພີ່ມໃໝ່ ແລະ ຄົນທີ່ຖືກຕັດອອກເພາະຊ້ຳກັນ)
+            if (result.totalDuplicates > 0 && result.totalStudentsSaved > 0) {
+                showToast(`ເພີ່ມໃໝ່ ${result.totalStudentsSaved} ຄົນ (ຕັດຊື່ຊ້ຳອອກ ${result.totalDuplicates} ຄົນ)`, 'warning');
+            } else if (result.totalDuplicates > 0 && result.totalStudentsSaved === 0) {
+                showToast(`ລາຍຊື່ທີ່ວາງມາຊ້ຳກັນກັບຂໍ້ມູນເກົ່າທັງໝົດ (${result.totalDuplicates} ຄົນ)`, 'error');
+            } else {
+                showToast(`ເພີ່ມລາຍຊື່ນັກຮຽນໃໝ່ ${result.totalStudentsSaved} ຄົນ ສຳເລັດແລ້ວ!`, 'success');
+            }
         }).catch(err => {
             alert("ເກີດຂໍ້ຜິດພາດໃນການບັນທຶກລົງ Firebase: " + err.message);
             if (btnSubmit) btnSubmit.innerText = 'ບັນທຶກຂໍ້ມູນ';
