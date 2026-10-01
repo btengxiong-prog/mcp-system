@@ -1288,19 +1288,16 @@ function saveStudentScores() {
         }
         const schoolKey = state.school.code + '_' + state.school.year;
         
-        // ປ່ຽນຄີ (Key) ທີ່ມີຈ້ຳ (.) ເປັນຂີດລຸ່ມ (_) ເພື່ອໃຫ້ Firebase ຍອມຮັບ
         const dataToSave = {};
         if (studentScores) {
             for (let key in studentScores) {
-                const safeKey = key.replace('.', '_'); // ປ່ຽນ ປ.1 ເປັນ ປ_1
+                const safeKey = key.replace('.', '_'); 
                 dataToSave[safeKey] = studentScores[key];
             }
         }
         
+        // ລຶບ .then() ອອກ ເພາະ Firebase Realtime DB ມີ .on('value') ຊ່ວຍໂຫຼດໜ້າຈໍໃຫ້ອັດຕະໂນມັດແລ້ວ (ຫຼຸດການ Render ຊ້ຳຊ້ອນ)
         db.ref('studentScores/' + schoolKey).set(dataToSave)
-        .then(() => {
-            if (typeof calculateAll === 'function') calculateAll();
-        })
         .catch((error) => {
             alert("ເກີດຂໍ້ຜິດພາດໃນການບັນທຶກຄະແນນພາກ 3: " + error.message);
         });
@@ -1712,20 +1709,21 @@ function renderPartForm(partNum, containerId) {
 function setPart(partNum, idx, value) {
   if (!state.school || !state.school.code) {
       showToast('ກະລຸນາເລືອກໂຮງຮຽນຢູ່ໜ້າແດຊບອດ ແລ້ວກົດບັນທຶກກ່ອນ!', 'warning');
-      renderAll(); 
       return;
   }
   if (state.school.code === 'all_schools') {
       showToast('ບໍ່ສາມາດແກ້ໄຂຂໍ້ມູນໃນໂໝດສັງລວມ (ລວມທຸກໂຮງຮຽນ) ໄດ້!', 'warning');
-      renderAll(); 
       return;
   }
   if (!state['part' + partNum]) state['part' + partNum] = {};
   state['part' + partNum][idx] = value;
+  
+  // ບັນທຶກລົງຖານຂໍ້ມູນຢ່າງດຽວ ບໍ່ຕ້ອງສັ່ງ calculateAll() 
+  // ເພາະ Firebase Listener ຈະເຮັດວຽກເອງອັດຕະໂນມັດ ຫຼຸດອາການຄ້າງຕອນຕິກ
   saveState();
-  calculateAll();
   showToast(`ບັນທຶກຂໍ້ ${idx + 1} ແລ້ວ!`, 'success');
 }
+
 function savePartManual(partNum) {
   if (!state['part' + partNum]) state['part' + partNum] = {};
   const total = partNum === 1 ? 25 : 20;
@@ -1976,7 +1974,6 @@ function saveEditStudent(grade, id) {
         if (item) {
             item.name = nameEl.value;
             
-            // ກວດສອບບໍ່ໃຫ້ຄະແນນເກີນ 1 ຫຼື ຫຼຸດ 0
             let laoVal = Number(laoEl.value);
             if (laoVal > 1) laoVal = 1; if (laoVal < 0) laoVal = 0;
             item.lao = laoVal;
@@ -1985,16 +1982,17 @@ function saveEditStudent(grade, id) {
             if (mathVal > 1) mathVal = 1; if (mathVal < 0) mathVal = 0;
             item.math = mathVal;
 
-            // ບັນທຶກຂຶ້ນ Firebase 
+            // ປິດໂໝດແກ້ໄຂໄວ້ກ່ອນ
+            editingStudentId = null;
+
+            // ສົ່ງຂໍ້ມູນຂຶ້ນແລ້ວປ່ອຍໃຫ້ Firebase Trigger ສັ່ງວາດໜ້າຈໍແທນ
             saveStudentScores();
-            calculatePart3Summary(grade);
+            showToast('ບັນທຶກຂໍ້ມູນນັກຮຽນສຳເລັດແລ້ວ', 'success');
         }
+    } else {
+        editingStudentId = null;
+        renderPart3Table();
     }
-    
-    // ປິດໂໝດແກ້ໄຂ ແລະ ໂຫຼດຕາຕະລາງໃໝ່
-    editingStudentId = null;
-    renderPart3Table();
-    showToast('ບັນທຶກຂໍ້ມູນນັກຮຽນສຳເລັດແລ້ວ', 'success');
 }
 
 function handleScoreNavigation(e, currentInput) {
@@ -2411,22 +2409,9 @@ function getCategory(score, level = 'school') {
 
 let chartParts, chartAspects;
 function renderCharts(p1, p2, p3) {
-  if (chartParts) chartParts.destroy();
-  if (chartAspects) chartAspects.destroy();
-
-  chartParts = new Chart(document.getElementById('chartParts'), {
-    type: 'bar',
-    data: {
-      labels: ['ພາກທີ I', 'ພາກທີ II', 'ພາກທີ III'],
-      datasets: [{ label: 'ອັດຕາ %', data: [p1, p2, p3], backgroundColor: ['#3b82f6', '#f59e0b', '#8b5cf6'] }]
-    },
-    options: { responsive: true, scales: { y: { beginAtZero: true, max: 100 } } }
-  });
-
   const aspects = [], aspectScores = [];
   MCP_DATA.part1.aspects.forEach((a, ai) => {
-    let sum = 0, count = 0;
-    const start = ai * 5;
+    let sum = 0, count = 0; const start = ai * 5;
     for (let i = start; i < start + 5; i++) {
       const v = state.part1 ? state.part1[i] : null; 
       if (v === 'pass') sum += 100; else if (v === 'improve') sum += 50;
@@ -2446,66 +2431,101 @@ function renderCharts(p1, p2, p3) {
     aspects.push(a.name.substring(0, 20)); aspectScores.push(count > 0 ? sum / count : 0);
   });
 
-  chartAspects = new Chart(document.getElementById('chartAspects'), {
-    type: 'bar',
-    data: {
-      labels: aspects,
-      datasets: [{ label: 'ອັດຕາ %', data: aspectScores, backgroundColor: aspectScores.map(s => s >= 75 ? '#16a34a' : (s >= 50 ? '#f59e0b' : '#dc2626')) }]
-    },
-    options: { indexAxis: 'y', responsive: true, scales: { x: { beginAtZero: true, max: 100 } }, plugins: { legend: { display: false } } }
-  });
+  // ກຣາຟທີ 1
+  if (chartParts) {
+      chartParts.data.datasets[0].data = [p1, p2, p3];
+      chartParts.update();
+  } else {
+      const cpEl = document.getElementById('chartParts');
+      if (cpEl) {
+          chartParts = new Chart(cpEl, {
+            type: 'bar',
+            data: {
+              labels: ['ພາກທີ I', 'ພາກທີ II', 'ພາກທີ III'],
+              datasets: [{ label: 'ອັດຕາ %', data: [p1, p2, p3], backgroundColor: ['#3b82f6', '#f59e0b', '#8b5cf6'] }]
+            },
+            options: { responsive: true, scales: { y: { beginAtZero: true, max: 100 } } }
+          });
+      }
+  }
+
+  // ກຣາຟທີ 2
+  if (chartAspects) {
+      chartAspects.data.labels = aspects;
+      chartAspects.data.datasets[0].data = aspectScores;
+      chartAspects.data.datasets[0].backgroundColor = aspectScores.map(s => s >= 75 ? '#16a34a' : (s >= 50 ? '#f59e0b' : '#dc2626'));
+      chartAspects.update();
+  } else {
+      const caEl = document.getElementById('chartAspects');
+      if (caEl) {
+          chartAspects = new Chart(caEl, {
+            type: 'bar',
+            data: {
+              labels: aspects,
+              datasets: [{ label: 'ອັດຕາ %', data: aspectScores, backgroundColor: aspectScores.map(s => s >= 75 ? '#16a34a' : (s >= 50 ? '#f59e0b' : '#dc2626')) }]
+            },
+            options: { indexAxis: 'y', responsive: true, scales: { x: { beginAtZero: true, max: 100 } }, plugins: { legend: { display: false } } }
+          });
+      }
+  }
 }
+
+let calcAllTimeout = null;
 function calculateAll() {
-  const p1 = calcPart1();
-  const p2 = calcPart2();
-  const p3 = calcPart3();
-  const total = calcTotal();
+  // ຖ້າມີການເອີ້ນໃຊ້ຮົວໆ ໃຫ້ຍົກເລີກການວາດເກົ່າຖິ້ມ ແລ້ວລໍຖ້າຈັງຫວະທີ່ຢຸດພິມຈຶ່ງວາດ (Debounce)
+  if (calcAllTimeout) clearTimeout(calcAllTimeout);
   
-  const currentLevel = getCurrentAnalysisLevel();
-  const cat = getCategory(total, currentLevel);
+  calcAllTimeout = setTimeout(() => {
+      const p1 = calcPart1();
+      const p2 = calcPart2();
+      const p3 = calcPart3();
+      const total = calcTotal();
+      
+      const currentLevel = getCurrentAnalysisLevel();
+      const cat = getCategory(total, currentLevel);
 
-  try {
-    if (typeof renderSummaryPart3 === 'function') renderSummaryPart3();
-  } catch(e) {}
+      // ເອົາ renderSummaryPart3() ອອກຈາກບ່ອນນີ້ ເພາະ Firebase Listener ຈັດການໃຫ້ແລ້ວ 
+      // ຊ່ວຍແກ້ອາການກະຕຸກເວລາແກ້ໄຂຄະແນນໄດ້ 100%
 
-  const setTxt = (id, val) => {
-    const el = document.getElementById(id);
-    if (el) el.innerText = val;
-  };
+      const setTxt = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.innerText = val;
+      };
 
-  setTxt('part1Score', p1.toFixed(2) + '%');
-  setTxt('dashPart1', p1.toFixed(2) + '%');
-  setTxt('part2Score', p2.toFixed(2) + '%');
-  setTxt('dashPart2', p2.toFixed(2) + '%');
-  setTxt('part3Score', p3.toFixed(2) + '%');
-  setTxt('dashPart3', p3.toFixed(2) + '%');
-  setTxt('dashTotal', total.toFixed(2) + '%');
+      setTxt('part1Score', p1.toFixed(2) + '%');
+      setTxt('dashPart1', p1.toFixed(2) + '%');
+      setTxt('part2Score', p2.toFixed(2) + '%');
+      setTxt('dashPart2', p2.toFixed(2) + '%');
+      setTxt('part3Score', p3.toFixed(2) + '%');
+      setTxt('dashPart3', p3.toFixed(2) + '%');
+      setTxt('dashTotal', total.toFixed(2) + '%');
 
-  const titleEl = document.getElementById('dashCategoryTitle');
-  if (titleEl) titleEl.innerText = getLevelTitle(currentLevel);
+      const titleEl = document.getElementById('dashCategoryTitle');
+      if (titleEl) titleEl.innerText = getLevelTitle(currentLevel);
 
-  const catEl = document.getElementById('dashCategory');
-  if (catEl) {
-      catEl.innerText = cat.label;
-      catEl.className = 'badge ' + cat.cls + ' text-base px-4 py-2';
-  }
+      const catEl = document.getElementById('dashCategory');
+      if (catEl) {
+          catEl.innerText = cat.label;
+          catEl.className = 'badge ' + cat.cls + ' text-base px-4 py-2';
+      }
 
-  const prog = document.getElementById('dashProgress');
-  if (prog) {
-      prog.style.width = Math.min(total, 100) + '%';
-      prog.style.background = cat.color;
-      prog.innerText = total.toFixed(2) + '%';
-  }
+      const prog = document.getElementById('dashProgress');
+      if (prog) {
+          prog.style.width = Math.min(total, 100) + '%';
+          prog.style.background = cat.color;
+          prog.innerText = total.toFixed(2) + '%';
+      }
 
-  if (document.getElementById('planCurrent')) document.getElementById('planCurrent').value = total.toFixed(2) + '%';
-  if (document.getElementById('planDiff')) document.getElementById('planDiff').value = (state.planTarget - total).toFixed(2) + '%';
-  if (document.getElementById('planCategory')) document.getElementById('planCategory').value = getCategory(state.planTarget, currentLevel).label;
+      if (document.getElementById('planCurrent')) document.getElementById('planCurrent').value = total.toFixed(2) + '%';
+      if (document.getElementById('planDiff')) document.getElementById('planDiff').value = (state.planTarget - total).toFixed(2) + '%';
+      if (document.getElementById('planCategory')) document.getElementById('planCategory').value = getCategory(state.planTarget, currentLevel).label;
 
-  try {
-    if (document.getElementById('chartParts') && document.getElementById('chartAspects')) {
-        renderCharts(p1, p2, p3);
-    }
-  } catch(e) {}
+      try {
+        if (document.getElementById('chartParts') && document.getElementById('chartAspects')) {
+            renderCharts(p1, p2, p3);
+        }
+      } catch(e) {}
+  }, 100); 
 }
 
 function getTargetSchoolsForDashboard(dCode, gCode) {
