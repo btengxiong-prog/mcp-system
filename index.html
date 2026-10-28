@@ -3212,6 +3212,9 @@ let adminPendingList = [];
 let adminSummaryCache = { data: null, timestamp: 0, key: '' };
 const ADMIN_CACHE_TTL = 30000;
 
+// ========================================================
+// 🚀 ປັບປຸງໃໝ່: ດຶງຂໍ້ມູນພຽງຄັ້ງດຽວ (Single Query) ເພື່ອຄວາມໄວສູງສຸດ
+// ========================================================
 function loadAdminSummary() {
     if (!state.user || state.user.role !== 'admin') {
         document.getElementById('adminSummaryBox')?.classList.add('hidden');
@@ -3228,6 +3231,7 @@ function loadAdminSummary() {
     const cacheKey = `${dCode}_${gCode}_${year}`;
     const now = Date.now();
     
+    // ໃຊ້ Cache ຖ້າຫາກວ່າຫາກໍ່ດຶງຂໍ້ມູນໄປບໍ່ດົນມານີ້ (ພາຍໃນ 30 ວິນາທີ)
     if (adminSummaryCache.key === cacheKey && (now - adminSummaryCache.timestamp) < ADMIN_CACHE_TTL) {
         applyAdminSummary(adminSummaryCache.data);
         return;
@@ -3245,52 +3249,60 @@ function loadAdminSummary() {
     document.getElementById('adminCompletedSchools').innerHTML = '<span class="text-sm">ກຳລັງໂຫຼດ...</span>';
     document.getElementById('adminPendingSchools').innerHTML = '<span class="text-sm">ກຳລັງໂຫຼດ...</span>';
 
-    const fetchBatch = async (path, schools, batchSize = 20) => {
-        const results = [];
-        for (let i = 0; i < schools.length; i += batchSize) {
-            const batch = schools.slice(i, i + batchSize);
-            const batchResults = await Promise.all(batch.map(s => db.ref(path + '/' + s.code + '_' + year).once('value')));
-            results.push(...batchResults);
-        }
-        return results;
-    };
-
+    // 🌟 ດຶງຂໍ້ມູນທັງໝົດພຽງແຕ່ 2 ຄັ້ງ (ບໍ່ແມ່ນ 150 ຄັ້ງແບບເກົ່າ)
     Promise.all([
-        fetchBatch('schools', targetSchools),
-        fetchBatch('studentScores', targetSchools)
-    ]).then(([schoolSnaps, stuSnaps]) => {
-        const completed = [], pending = [];
+        db.ref('schools').once('value'),
+        db.ref('studentScores').once('value')
+    ]).then(([schoolSnap, studentSnap]) => {
+        const allSchools = schoolSnap.val() || {};
+        const allStudents = studentSnap.val() || {};
+        
+        const completed = [];
+        const pending = [];
 
-        targetSchools.forEach((s, idx) => {
-            const sData = schoolSnaps[idx].exists() ? schoolSnaps[idx].val() : null;
-            const stData = stuSnaps[idx].exists() ? stuSnaps[idx].val() : null;
+        targetSchools.forEach(s => {
+            const key = s.code + '_' + year;
+            const sData = allSchools[key];
+            const stData = allStudents[key];
 
             const partsDone = [];
+            // ກວດສອບພາກ 1 ແລະ ພາກ 2
             if (sData?.part1 && Object.keys(sData.part1).length > 0) partsDone.push('ພາກ 1');
             if (sData?.part2 && Object.keys(sData.part2).length > 0) partsDone.push('ພາກ 2');
             
+            // ກວດສອບພາກ 3 (ນັກຮຽນ)
             let hasP3 = false;
             if (stData) {
                 for (const g in stData) {
-                    if (stData[g] && Object.keys(stData[g]).length > 0) { hasP3 = true; break; }
+                    if (stData[g] && Object.keys(stData[g]).length > 0) { 
+                        hasP3 = true; 
+                        break; 
+                    }
                 }
             }
             if (hasP3) partsDone.push('ພາກ 3');
 
             const item = {
-                code: s.code, name: s.name,
+                code: s.code, 
+                name: s.name,
                 details: partsDone.length > 0 ? partsDone.join(', ') : 'ຍັງບໍ່ມີຂໍ້ມູນ'
             };
 
-            if (partsDone.length > 0) completed.push(item);
-            else pending.push(item);
+            if (partsDone.length > 0) {
+                completed.push(item);
+            } else {
+                pending.push(item);
+            }
         });
 
         const result = { completed, pending, total };
+        
+        // ບັນທຶກລົງ Cache ເພື່ອບໍ່ໃຫ້ດຶງຊ້ຳ
         adminSummaryCache = { data: result, timestamp: Date.now(), key: cacheKey };
         applyAdminSummary(result);
+
     }).catch(err => {
-        console.error("Error:", err);
+        console.error("Error loading admin summary:", err);
         document.getElementById('adminCompletedSchools').innerText = "ຜິດພາດ";
         document.getElementById('adminPendingSchools').innerText = "ຜິດພາດ";
     });
